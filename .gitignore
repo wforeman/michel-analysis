@@ -2,4 +2,5 @@
 *.root
 *.png
 *.swp
+*.tmp
 .DS_STORE

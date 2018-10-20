@@ -6,6 +6,7 @@ float fChargeRes;
 float fPhelRes;
 
 TH1D* hElectronLifetime;
+TCanvas* cdefault;
 
 bool fUseTrueEnergy = false;
 bool fRequireContainment = false;
@@ -560,7 +561,8 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
   // =================================================================================
   // HISTOGRAMS
   // =================================================================================
- 
+  
+  
   // Misc. diagnostic plots--------------------------
   int nbins = fRunEnd - fRunStart;
   hRunVsEnergy = new TH2D("RunVsEnergy",Form("%s;Run number;Q-based energy [MeV]",runtag.c_str()),nbins,fRunStart,fRunEnd,40,0,80); //100,0,2e6);
@@ -696,7 +698,7 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
   int Eres_bins = 60;
   float Eres_x1   = 2.5; //2.5;
   float Eres_x2   = 62.5; //62.5;
-  float res_bins = 300; // 1200
+  float res_bins = 150; // 1200
   float res_max = 3.0;
 
   hTrue_NContainShwr    = new TH1D("True_NContainShwr","Number of fully contained showers ;True electron energy [MeV];Number of events",12, Eres_x1, Eres_x2);
@@ -720,10 +722,9 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
   hEnergyQL_LogL_Fail[0]     = new TH1D("EnergyQL_LogL_Fail_Data","E_{Q+L} for events failing Log-L;Reconstructed shower energy [MeV];Events / 2 MeV",E_bins, 0, E_x2);
   hEnergyQL_LogL_Fail[1]     = (TH1D*)hEnergyQL_LogL[0]    ->Clone("EnergyQL_LogL_Fail_MC");
   
-  hEvs_Qtrue                = new TH2D("Evs_Qtrue","True Q vs. true Michel energy dep.;True energy deposited [MeV];True charge [e^{-}]",Eres_bins,Eres_x1,Eres_x2,100,0.,3000e3);
+  hEvs_Qtrue                = new TH2D("Evs_Qtrue","True Q vs. true Michel energy dep.;True energy deposited [MeV];True charge [e^{-}]",Eres_bins,Eres_x1,Eres_x2,150,0.,3000e3);
+  hEvs_Ltrue                = new TH2D("Evs_Ltrue","True L vs. true Michel energy dep.;True energy deposited [MeV];True light [#gamma]",Eres_bins,Eres_x1,Eres_x2,150,0.,3000e3);
   hEvs_Q                = new TH2D("Evs_Q","Q vs. true Michel energy dep.;True energy deposited [MeV];Reco charge [e^{-}]",Eres_bins,Eres_x1,Eres_x2,100,0.,3000e3);
-//  hEvs_trueQ            = new TH2D("Evs_trueQ","True Q vs. true Michel energy dep.;True energy deposited [MeV];True charge [e^{-}]",Eres_bins,Eres_x1,Eres_x2,100,0.,3000e3);
-  hEvs_Ltrue                = new TH2D("Evs_Ltrue","True L vs. true Michel energy dep.;True energy deposited [MeV];True light [#gamma]",Eres_bins,Eres_x1,Eres_x2,100,0.,3000e3);
   hEvs_L                = new TH2D("Evs_L","L vs. true Michel energy dep.;True energy deposited [MeV];Reco light [#gamma]",Eres_bins,Eres_x1,Eres_x2,100,0.,3000e3);
  
   hEvsRes_Q             = new TH2D("EvsRes_Q","Q resolution vs. true Michel energy dep.;True energy deposited [MeV];( reco - true ) / true",Eres_bins,Eres_x1,Eres_x2,res_bins,-1.*res_max,res_max);
@@ -732,7 +733,7 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
   hEvsRes_E_Trk           = new TH2D("EvsRes_E_Trk","Electron ion. track;True energy deposited [MeV];( reco - true ) / true",Eres_bins, Eres_x1, Eres_x2,res_bins, -1.*res_max, res_max); 
   hEvsRes_E_Q             = new TH2D("EvsRes_E_Q","Q-only shower energy (uniform R);True energy deposited [MeV];( reco - true ) / true",Eres_bins, Eres_x1, Eres_x2,res_bins, -1.*res_max, res_max); 
   hEvsRes_E_Q_2R          = new TH2D("EvsRes_E_Q_2R","Q-only shower energy (non-uniform R);True energy deposited [MeV];( reco - true ) / true",Eres_bins, Eres_x1, Eres_x2,res_bins, -1.*res_max, res_max); 
-  hEvsRes_E_QL            = new TH2D("EvsRes_E_QL","Q+L shower energy;True energy deposited [MeV];Energy resolution",Eres_bins, Eres_x1, Eres_x2,res_bins, -1.*res_max, res_max); 
+  hEvsRes_E_QL            = new TH2D("EvsRes_E_QL","Q+L shower energy;True energy deposited [MeV];( reco - true ) / true",Eres_bins, Eres_x1, Eres_x2,res_bins, -1.*res_max, res_max); 
   hEvsRes_E_QL_LogL       = new TH2D("EvsRes_E_QL_LogL","Q+L log-likelihood shower energy (uniform R);True energy deposited [MeV];( reco - true ) / true",Eres_bins, Eres_x1, Eres_x2,res_bins, -1.*res_max, res_max); 
 
   
@@ -1485,7 +1486,9 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
           f_LogLEnergyQL->SetParameter("peRes",     0.); // assume 0 for now
           f_LogLEnergyQL->SetParameter("L",L_shower);
           f_LogLEnergyQL->SetParameter("Q_ion",Q_shower);
-          
+         
+          energyQL_LogL = energyQL; 
+          /*
           if( Q_shower > 0 && L_shower > 0 ){ 
             energyQL_LogL   = f_LogLEnergyQL->GetMinimumX( E_ll, E_ul, 0.01,100,false);
           
@@ -1496,9 +1499,8 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
               energyQL_LogL = -9;
               hEnergyQL_LogL_Fail[type]    ->Fill( energyQL );
             }
-          
-          
           }
+          */
 
           //if( energyQL_LogL_2R < E_ll + 3*dE || energyQL_LogL_2R > E_ul - 3*dE ) energyQL_LogL_2R = -9.;
           
@@ -2044,7 +2046,10 @@ void LightPlots(){
 // Plot energy and energy resolution histograms
 void EnergyPlots(bool doResolutionSlices = false){
 
- 
+//  gStyle              ->SetTitleFont(62,"t");
+  
+  
+  
 
   std::cout
   <<"====================================================\n"
@@ -2074,9 +2079,9 @@ void EnergyPlots(bool doResolutionSlices = false){
   // Fit functions
 //  TF1*      gaus2Fit[2];
 //  TF1*      gaus_bg[2];
-  TF1* gaus2Fit  = new TF1("DoubleGaus","[0]*exp( - pow( (x-[1])/( sqrt(2)*[2]), 2)) + [3]*exp( - pow( (x-[4])/( sqrt(2)*[5]), 2)) ",-3,3);
-  TF1* gaus_bg   = new TF1("Gaus_bg","[0]*exp( -pow((x-[1])/(sqrt(2)*[2]),2))",-3,3);
-  gaus_bg   ->SetLineColor(kOrange-1);
+  //TF1* gaus2Fit  = new TF1("DoubleGaus","[0]*exp( - pow( (x-[1])/( sqrt(2)*[2]), 2)) + [3]*exp( - pow( (x-[4])/( sqrt(2)*[5]), 2)) ",-3,3);
+  //TF1* gaus_bg   = new TF1("Gaus_bg","[0]*exp( -pow((x-[1])/(sqrt(2)*[2]),2))",-3,3);
+  //gaus_bg   ->SetLineColor(kOrange-1);
   
   int ii=0;
   int dataMax;
@@ -2411,7 +2416,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   cEnergy2->Divide(3,1);
 
   // Some formatting changes
-  gStyle              ->SetTitleFont(62,"t");
+//  gStyle              ->SetTitleFont(62,"t");
   //hEnergyQ[1]         ->SetTitleFont(62,"t");
   //hEnergyQL[1]         ->SetTitleFont(62,"t");
   //hEnergyQL_LogL[1]         ->SetTitleFont(62,"t");
@@ -2527,7 +2532,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   b3_leg2 ->AddEntry(hEnergyQL_LogL[0], "Data", "LPE");
   b3_leg2 ->Draw();
   
-  gStyle              ->SetTitleFont(42,"t");
+//  gStyle              ->SetTitleFont(42,"t");
   
   
   
@@ -2543,8 +2548,8 @@ void EnergyPlots(bool doResolutionSlices = false){
   <<"===================================================\n"
   <<"Looking at Q and L resolutions for Michel events...\n";
   SetTrigEffParams(0);
-  //fMaxMCEvents = 50000; //50000; //-1; //100000; //-1;
-  fMaxMCEvents = -1;
+  fMaxMCEvents = -50000; //50000; //-1; //100000; //-1;
+  //fMaxMCEvents = -1;
   RepMC();
     
   TF1* fResFit = new TF1("resFit","sqrt([0]^2/x + [1]^2)",1.,100.);
@@ -2577,6 +2582,25 @@ void EnergyPlots(bool doResolutionSlices = false){
   //std::vector<TF1> fvFitFuncLtrue;
   std::vector<TF1> fvFitFuncQ;
   std::vector<TF1> fvFitFuncL;
+    
+    
+    // Michel shower Q
+    ResolutionSliceLoop(
+      hEvs_Q, Emin, Emax, 9, 1.,
+      true, "Q", "Shower Q",3,3,-9,-9,
+      1,20, false,
+      gr_Qsig,
+      gr_Qrms,
+      fvFitFuncQ);
+    
+    // Michel shower L
+    ResolutionSliceLoop(
+      hEvs_L, Emin, Emax, 9, 1.,
+      true, "L", "Shower L",3,3,-9,-9,
+      0,-1, false,
+      gr_Lsig,
+      gr_Lrms,
+      fvFitFuncL);
   
     /*  
     // Michel shower Q res
@@ -2599,14 +2623,6 @@ void EnergyPlots(bool doResolutionSlices = false){
       gr_Lrms);
     */
 
-    // Michel shower Q
-    ResolutionSliceLoop(
-      hEvs_Q, Emin, Emax, 9, 1.,
-      true, "Q", "Shower Q",3,3,-9,-9,
-      1,-1, false,
-      gr_Qsig,
-      gr_Qrms,
-      fvFitFuncQ);
   
     /*
     // Michel shower Q (true)
@@ -2619,14 +2635,6 @@ void EnergyPlots(bool doResolutionSlices = false){
       fvFitFuncQtrue);
     */
 
-    // Michel shower L
-    ResolutionSliceLoop(
-      hEvs_L, Emin, Emax, 9, 1.,
-      true, "L", "Shower L",3,3,-9,-9,
-      0,-1, false,
-      gr_Lsig,
-      gr_Lrms,
-      fvFitFuncL);
     
     /*
     // Michel shower L (true)
@@ -3131,8 +3139,8 @@ void EnergyPlots(bool doResolutionSlices = false){
 
 
 
-
-
+    if( 1 ) {
+      
     // --------------------------------------------------------------------
     // 4.2) Bare electron shower resolution plots. Here we will use the bare
     //      electron MC (no muon) for a simplified look at resolution of 
@@ -3153,7 +3161,22 @@ void EnergyPlots(bool doResolutionSlices = false){
     <<"\n###############################################################\n"
     <<"Resolution slices: bare electrons, nominal\n";
    
-    fMaxMCEvents=20000;
+    fMaxMCEvents=-500000;
+
+    // Make E_vs_Q and L 2D histograms more finely binned along Y:
+    //int E_bins = 50;
+    int Eres_bins = 60;
+    float Eres_x1   = 2.5; //2.5;
+    float Eres_x2   = 62.5; //62.5;
+    float res_bins = 300; // 1200
+    float res_max = 3.0;
+    hEvs_Q  = new TH2D("Evs_Q","Q vs. true Michel energy dep.;True energy deposited [MeV];Reco charge [e^{-}]",Eres_bins,Eres_x1,Eres_x2,res_bins,0.,3000e3);
+    hEvs_L  = new TH2D("Evs_L","L vs. true Michel energy dep.;True energy deposited [MeV];Reco light [#gamma]",Eres_bins,Eres_x1,Eres_x2,res_bins,0.,3000e3);
+    hEvsRes_E_Trk = new TH2D("EvsRes_E_Trk","Electron ion. track;True energy deposited [MeV];( reco - true ) / true",Eres_bins, Eres_x1, Eres_x2,res_bins, -1.*res_max, res_max); 
+    hEvsRes_E_Q   = new TH2D("EvsRes_E_Q","Q-only shower energy (uniform R);True energy deposited [MeV];( reco - true ) / true",Eres_bins, Eres_x1, Eres_x2,res_bins, -1.*res_max, res_max); 
+    hEvsRes_E_QL  = new TH2D("EvsRes_E_QL","Q+L shower energy;True energy deposited [MeV];( reco - true ) / true",Eres_bins, Eres_x1, Eres_x2,res_bins, -1.*res_max, res_max); 
+    hEvsRes_E_QL_LogL = new TH2D("EvsRes_E_QL_LogL","Q+L log-likelihood shower energy (uniform R);True energy deposited [MeV];( reco - true ) / true",Eres_bins, Eres_x1, Eres_x2,res_bins, -1.*res_max, res_max); 
+
 
     // Lower energy threshold
     Emin = 2.5;
@@ -3206,28 +3229,26 @@ void EnergyPlots(bool doResolutionSlices = false){
     // The Q and L distributions will need to change
     // for each S/N and LY combination
     //fFuncP_Q = (TF1*)fFuncP_L
-    /*
-    double QdistParams[3][2];
-    double LdistParams[3][2];
-    // SN = 7
-    QdistParams[0][0]=
-    QdistParams[0][1]=
-    // SN = 10
-    QdistParams[1][0]=
-    QdistParams[1][1]=
-    // SN = 70
-    QdistParams[2][0]=
-    QdistParams[2][1]=
-    // LY 1
-    LdistParams[0][0]=
-    LdistParams[0][1]=
-    // LY 2
-    LdistParams[1][0]=
-    LdistParams[1][1]=
-    // LY 3
-    LdistParams[2][0]=
-    LdistParams[2][1]=
-    */
+   // double QdistParams[3][2];
+   // double LdistParams[3][2];
+   // // SN = 7
+   // QdistParams[0][0]=
+   // QdistParams[0][1]=
+   // // SN = 10
+   // QdistParams[1][0]=
+   // QdistParams[1][1]=
+   // // SN = 70
+   // QdistParams[2][0]=
+   // QdistParams[2][1]=
+   // // LY 1
+   // LdistParams[0][0]=
+   // LdistParams[0][1]=
+   // // LY 2
+   // LdistParams[1][0]=
+   // LdistParams[1][1]=
+   // // LY 3
+   // LdistParams[2][0]=
+   // LdistParams[2][1]=
 
     TGraphAsymmErrors* grEl_Qdist_mean_sn[3];
     TGraphAsymmErrors* grEl_Qdist_rms_sn[3];
@@ -3406,7 +3427,7 @@ void EnergyPlots(bool doResolutionSlices = false){
           ResolutionSliceLoop(
             hEvs_Q, Emin, Emax, 10, 1.,
             true, Form("Q_e_sn%lu",i_sn), "Shower Q",3,3,-9,-9,
-            0, 0.33, false,
+            0, -0.33, false,
             grEl_Qdist_sig_sn[i_sn],
             grEl_Qdist_rms_sn[i_sn],
             grEl_Qdist_mean_sn[i_sn]);
@@ -3418,8 +3439,8 @@ void EnergyPlots(bool doResolutionSlices = false){
           grEl_Ldist_mean_ly[i_ly] = new TGraphAsymmErrors();
           ResolutionSliceLoop(
             hEvs_L, Emin, Emax, 10, 1.,
-            true, Form("L_e_ly%lu", i_ly), "Shower L",3,3,-9,9,
-            0, 0.33, false,
+            true, Form("L_e_ly%lu", i_ly), "Shower L",3,3,-9,-9,
+            0, -0.33, false,
             grEl_Ldist_sig_ly[i_ly],
             grEl_Ldist_rms_ly[i_ly],
             grEl_Ldist_mean_ly[i_ly]);
@@ -3461,30 +3482,35 @@ void EnergyPlots(bool doResolutionSlices = false){
     
     // =======================================================
     // First, we need to parameterize Q and L as we did for the 
-    // Michel sample:
+    // Michel sample
     
-    std::cout<<"A\n";
-    grEl_Qdist_mean_sn[0] -> SetMarkerStyle(20);
-    grEl_Qdist_mean_sn[0] -> SetMarkerSize(1.0);
-    grEl_Qdist_mean_sn[0] -> SetMarkerColor(kBlack);
+    // Q mean 
+    grEl_Qdist_mean_sn[0] ->SetMarkerStyle(20);
+    grEl_Qdist_mean_sn[0] ->SetMarkerSize(0.6);
+    grEl_Qdist_mean_sn[0] ->SetMarkerColor(kBlack);
     grEl_Qdist_mean_sn[0] -> SetLineColor(kBlack);
-    std::cout<<"A\n";
-    CopyTGraphFormat(grEl_Qdist_mean_sn[0],grEl_Qdist_mean_sn[1]);
-    CopyTGraphFormat(grEl_Qdist_mean_sn[0],grEl_Qdist_mean_sn[2]);
-    CopyTGraphFormat(grEl_Qdist_mean_sn[0],grEl_Ldist_sig_ly[0]);
-    CopyTGraphFormat(grEl_Qdist_mean_sn[0],grEl_Ldist_sig_ly[1]);
-    CopyTGraphFormat(grEl_Qdist_mean_sn[0],grEl_Ldist_sig_ly[2]);
-    std::cout<<"A\n";
+    grEl_Qdist_mean_sn[0] ->GetXaxis()->SetTitle("Electron energy [MeV]");
+    grEl_Qdist_mean_sn[0] ->GetYaxis()->SetTitle("Shower Q #mu [e]");
+    CopyTGraphFormat(grEl_Qdist_mean_sn[0],grEl_Qdist_mean_sn[1],true);
+    CopyTGraphFormat(grEl_Qdist_mean_sn[0],grEl_Qdist_mean_sn[2],true);
+
+    // Q sig 
+    CopyTGraphFormat(grEl_Qdist_mean_sn[0],grEl_Qdist_sig_sn[0]);    
+    grEl_Qdist_sig_sn[0] ->GetYaxis()->SetTitle("Shower Q #sigma/#mu");
+    CopyTGraphFormat(grEl_Qdist_sig_sn[0],grEl_Qdist_sig_sn[1],true);
+    CopyTGraphFormat(grEl_Qdist_sig_sn[0],grEl_Qdist_sig_sn[2],true);
     
-    grEl_Qdist_mean_sn[1] -> SetMarkerColor(kGray+2);
-    grEl_Qdist_sig_sn[1] -> SetMarkerColor(kGray+2);
-    grEl_Ldist_mean_ly[1] -> SetMarkerColor(kGray+2);
-    grEl_Ldist_sig_ly[1] -> SetMarkerColor(kGray+2);
-    grEl_Qdist_mean_sn[2] -> SetMarkerColor(kGray);
-    grEl_Qdist_sig_sn[2] -> SetMarkerColor(kGray);
-    grEl_Ldist_mean_ly[2] -> SetMarkerColor(kGray);
-    grEl_Ldist_sig_ly[2] -> SetMarkerColor(kGray);
-    std::cout<<"A\n";
+    // L mean
+    CopyTGraphFormat(grEl_Qdist_mean_sn[0],grEl_Ldist_mean_ly[0]);    
+    grEl_Ldist_mean_ly[0] ->GetYaxis()->SetTitle("Shower L #mu");
+    CopyTGraphFormat(grEl_Ldist_mean_ly[0],grEl_Ldist_mean_ly[1],true);
+    CopyTGraphFormat(grEl_Ldist_mean_ly[0],grEl_Ldist_mean_ly[2],true);
+
+    // L sig
+    CopyTGraphFormat(grEl_Qdist_mean_sn[0],grEl_Ldist_sig_ly[0]);    
+    grEl_Ldist_sig_ly[0] ->GetYaxis()->SetTitle("Shower L #sigma/#mu");
+    CopyTGraphFormat(grEl_Ldist_sig_ly[0],grEl_Ldist_sig_ly[1],true);
+    CopyTGraphFormat(grEl_Ldist_sig_ly[0],grEl_Ldist_sig_ly[2],true);
 
     // Divide the widths by the means:
     TGraphAsymmErrors* grEl_Qdist_rsig_sn[3];
@@ -3492,28 +3518,69 @@ void EnergyPlots(bool doResolutionSlices = false){
     for(size_t i=0; i<3; i++){
       grEl_Qdist_rsig_sn[i] = new TGraphAsymmErrors();
       grEl_Ldist_rsig_ly[i] = new TGraphAsymmErrors();
-      CopyTGraphFormat(grEl_Qdist_rsig_sn[i],grEl_Qdist_sig_sn[i])
-      CopyTGraphFormat(grEl_Ldist_rsig_ly[i],grEl_Ldist_sig_ly[i])
+      CopyTGraphFormat(grEl_Qdist_sig_sn[i],grEl_Qdist_rsig_sn[i],true);
+      CopyTGraphFormat(grEl_Ldist_sig_ly[i],grEl_Ldist_rsig_ly[i],true);
       for(size_t j=0; j<grEl_Qdist_sig_sn[i]->GetN(); j++){
-        double E, dE, qsig, lsig, qmean, lmean;
+        double E, dE, sig, sig_err, mean, mean_err, rsig, rsig_err;
         dE = grEl_Qdist_sig_sn[i]->GetErrorX(j);
-        grEl_Qdist_sig_sn[i]->GetPoint(j,E,qsig);
-        grEl_Qdist_mean_sn[i]->GetPoint(j,E,qmean);
-        grEl_Qdist_rsig_sn[i]->SetPoint(  grEl_Qdist_rsig_sn[i]->GetN(),E, qsig/qmean ); 
-        grEl_Ldist_sig_ly[i]->GetPoint(j,E,lsig);
-        grEl_Ldist_mean_ly[i]->GetPoint(j,E,lmean);
-        grEl_Ldist_rsig_ly[i]->SetPoint(  grEl_Ldist_rsig_ly[i]->GetN(),E, lsig/lmean ); 
+        
+        grEl_Qdist_sig_sn[i]->GetPoint(j,E,sig);
+        grEl_Qdist_mean_sn[i]->GetPoint(j,E,mean);
+        sig_err = grEl_Qdist_sig_sn[i]->GetErrorY(j);
+        mean_err = grEl_Qdist_mean_sn[i]->GetErrorY(j);
+        rsig = sig / mean;
+        rsig_err = rsig*std::sqrt( std::pow(sig_err/sig,2) + std::pow(mean_err/mean,2));
+        grEl_Qdist_rsig_sn[i]->SetPoint(  grEl_Qdist_rsig_sn[i]->GetN(),E,  rsig ); 
+        grEl_Qdist_rsig_sn[i]->SetPointError(  grEl_Qdist_rsig_sn[i]->GetN()-1, dE,dE, rsig_err, rsig_err );
+
+        grEl_Ldist_sig_ly[i]->GetPoint(j,E,sig);
+        grEl_Ldist_mean_ly[i]->GetPoint(j,E,mean);
+        sig_err = grEl_Ldist_sig_ly[i]->GetErrorY(j);
+        mean_err = grEl_Ldist_mean_ly[i]->GetErrorY(j);
+        rsig = sig / mean;
+        rsig_err = rsig*std::sqrt( std::pow(sig_err/sig,2) + std::pow(mean_err/mean,2));
+        grEl_Ldist_rsig_ly[i]->SetPoint(  grEl_Ldist_rsig_ly[i]->GetN(),E,  rsig ); 
+        grEl_Ldist_rsig_ly[i]->SetPointError(  grEl_Ldist_rsig_ly[i]->GetN()-1, dE,dE, rsig_err, rsig_err );
       }
     }
 
     // -------------------------------
     // First, Q:
     std::cout<<"Beginning Q dist fit for isolated showers\n";
-    TCanvas* c_el_params = new TCanvas("c_el_params","c_el_params",750,500);
-    c_el_params->Divide(2,2);
-   
+    TCanvas* c_el_paramsQ = new TCanvas("c_el_paramsQ","c_el_paramsQ",900,600);
+    c_el_paramsQ->Divide(3,2);
+    c_el_paramsQ->cd(1);
+    grEl_Qdist_mean_sn[0]->Draw("AP");
+    c_el_paramsQ->cd(2);
+    grEl_Qdist_mean_sn[1]->Draw("AP");
+    c_el_paramsQ->cd(3);
+    grEl_Qdist_mean_sn[2]->Draw("AP");
+    c_el_paramsQ->cd(4);
+    grEl_Qdist_rsig_sn[0]->Draw("AP");
+    c_el_paramsQ->cd(5);
+    grEl_Qdist_rsig_sn[1]->Draw("AP");
+    c_el_paramsQ->cd(6);
+    grEl_Qdist_rsig_sn[2]->Draw("AP");
+    
+    std::cout<<"Beginning L dist fit for isolated showers\n";
+    TCanvas* c_el_paramsL = new TCanvas("c_el_paramsL","c_el_paramsL",900,600);
+    c_el_paramsL->Divide(3,2);
+    c_el_paramsL->cd(1);
+    grEl_Ldist_mean_ly[0]->Draw("AP");
+    c_el_paramsL->cd(2);
+    grEl_Ldist_mean_ly[1]->Draw("AP");
+    c_el_paramsL->cd(3);
+    grEl_Ldist_mean_ly[2]->Draw("AP");
+    c_el_paramsL->cd(4);
+    grEl_Ldist_rsig_ly[0]->Draw("AP");
+    c_el_paramsL->cd(5);
+    grEl_Ldist_rsig_ly[1]->Draw("AP");
+    c_el_paramsL->cd(6);
+    grEl_Ldist_rsig_ly[2]->Draw("AP");
+    
+    /* 
     c_el_params->cd(1);
-    auto mg_el_params_Qmu = new TMultiGraph();
+    auto mg_el_params_Qmu = new TMultiGraph();:
     mg_el_params_Qmu->Add(grEl_Qdist_mean_sn[0],"AP");
     mg_el_params_Qmu->Add(grEl_Qdist_mean_sn[1],"AP");
     mg_el_params_Qmu->Add(grEl_Qdist_mean_sn[2],"AP");
@@ -3547,42 +3614,17 @@ void EnergyPlots(bool doResolutionSlices = false){
     mg_el_params_Lsig->Draw("a");
     mg_el_params_Lsig->GetXaxis()->SetTitle("Electron energy E_{e} [MeV]");
     mg_el_params_Lsig->GetXaxis()->SetTitle("Shower L #sigma/#mu");
+    */
+  
+
+  
     
-  
-
-  
-  
-  
-
-
-
-
-
-  
-  
-  // ===============================================================
-  // 4) Resolution plots
-  // ============================================================== 
-
-
-
-
-  }
-
-  if( 0 ) { // doResolutionSlices ) { 
-
-
-     
     
-  
-
-
-
-
-    /* 
-    //--------------------------------------------------------
-    // PLOTS
-    //--------------------------------------------------------
+    
+    
+    
+    
+    
     
     
     // -----------------------------------------------------
@@ -3623,7 +3665,6 @@ void EnergyPlots(bool doResolutionSlices = false){
     FormatAxes(mg_trk, axisTitleSize, axisLabelSize,1.1,1.3);  
     mg_trk->GetYaxis()->SetRangeUser(0,15);
     
-    
     TLegend* lg_trk = MakeLegend( 0.6, 1.-mar_t-0.02, textSize, 4, 0.33); 
     lg_trk  ->SetBorderSize(1);
     lg_trk  ->SetFillStyle(1001);
@@ -3639,7 +3680,11 @@ void EnergyPlots(bool doResolutionSlices = false){
     hd_trk ->AddText("#bf{LArIAT MC}");
     hd_trk ->AddText("Isolated Electrons");
     hd_trk ->Draw();
-
+    
+    
+    
+    
+    
     
     
     // -----------------------------------------------------
@@ -3712,6 +3757,12 @@ void EnergyPlots(bool doResolutionSlices = false){
 //    hd_shwr ->AddText("Electrons");
     hd_shwr ->Draw();
     gStyle->SetErrorX(0);
+
+  
+  
+    
+    
+    
     
     
     
@@ -3850,13 +3901,11 @@ void EnergyPlots(bool doResolutionSlices = false){
 
     }
 
-  
-  
-  */  
-  
 
-  } // End Resolution Plots
-  
+
+  } // do isolated electron showers
+
+  } // End resolution slices
   //gStyle->SetOptFit(1111);
   fSmearTruePE=false;
    
@@ -5380,7 +5429,6 @@ TH1D* Make1DSlice(const TH2D* h2d, int bin1, int bin2, std::string name)
   TH1D* h = new TH1D(name.c_str(),Form("1D slice: bins %d-%d (x= %f)",bin1,bin2,mean),nbins,xmin,xmax);
   for(int i=bin1; i<= bin2; i++){
     for(int j=1; j<nbins; j++){
-      //int gbin = h2d->GetBin(i,j);
       int bincontent = h2d->GetBinContent(i,j);
       for(int jj=0; jj<bincontent; jj++) h->Fill(h2d->GetYaxis()->GetBinCenter(j)); //h2d->GetBinContent(i,j));
     }
@@ -6790,6 +6838,7 @@ void MultiGausFit(TH1D* h, TF1* f2g, TF1* fbg, int mode, float param){
   //            2 == Initial fit to 2-Gaus, then zero-out BG and fit signal peak
   //            3 == Use initial 2-Gaus fit w/ no re-fitting 
   
+  
   fbg ->ReleaseParameter(0);
   fbg ->ReleaseParameter(1);
   fbg ->ReleaseParameter(2);
@@ -6824,10 +6873,10 @@ void MultiGausFit(TH1D* h, TF1* f2g, TF1* fbg, int mode, float param){
     fbg ->SetParameter(1, f2g->GetParameter(4));
     fbg ->SetParameter(2, f2g->GetParameter(5));
 
-    // find where histogram drops to 1/3 of peak height
+    // find where histogram drops to given threshold of peak height
     float r1 = h->GetXaxis()->GetXmin();
     float r2 = h->GetXaxis()->GetXmax();
-    float limit = 0.20;
+    float limit = 0.30;
     if( param >= 0 ) {
       for(size_t ii=max_bin; ii<h->GetXaxis()->GetNbins(); ii++){
         if( (h->GetBinContent(ii) < max*param && h->GetBinContent(ii+1) < max*param )
@@ -6861,10 +6910,8 @@ void MultiGausFit(TH1D* h, TF1* f2g, TF1* fbg, int mode, float param){
     h   ->Fit( f2g, "Q" );
   
     if( mode == 1 ) {
-      // Fit peak on top of BG (after fixing)
-      fbg ->SetParameter(0, f2g->GetParameter(3));
-      fbg ->SetParameter(1, f2g->GetParameter(4));
-      fbg ->SetParameter(2, f2g->GetParameter(5));
+
+      // Fit peak on top of BG 
       //fbg ->SetParLimits(0,0,0.5*max);
       //fbg ->SetParLimits(2,h->GetRMS(),h->GetRMS()*5.);
       //if( excludePeak ) {
@@ -6887,9 +6934,10 @@ void MultiGausFit(TH1D* h, TF1* f2g, TF1* fbg, int mode, float param){
       f2g->SetRange(r1,r2);
       h->Fit( f2g, "QR"); 
       
-      //f2g->SetParError(3, fbg->GetParError(0));
-      //f2g->SetParError(4, fbg->GetParError(1));
-      //f2g->SetParError(5, fbg->GetParError(2));
+      fbg ->SetParameter(0, f2g->GetParameter(3));
+      fbg ->SetParameter(1, f2g->GetParameter(4));
+      fbg ->SetParameter(2, f2g->GetParameter(5));
+      
     } else
     if( mode == 2 ) {
       // Zero-out BG and fit to peak
@@ -6910,9 +6958,85 @@ void MultiGausFit(TH1D* h, TF1* f2g, TF1* fbg, int mode, float param){
 }
 
 
-//void CheckQLDistributions(const TH2D* h_Q, con
-//}
 
+
+
+// ####################################################################################
+// Helper function for the resolution slice methods below. This function takes in a 
+// 2D histogram and slices it up into some number of 1D projections.
+void MakeSlices( const TH2D* h2, 
+                std::vector<TH1D*>& vec_h1, 
+                std::vector<float>& vec_x,
+                std::vector<int>& vec_nbins,
+                std::string name, 
+                float xmin, float xmax, int nslices, float dx){
+  
+  // Find first bin within the range and count up *all*
+  // bins in this range. If the provided "nslices" is negative,
+  // then make a slice out of every bin.
+  float         bwidth    = h2->GetXaxis()->GetBinWidth(1);
+  const size_t  nbins     = h2->GetXaxis()->GetNbins();
+  
+  // By default, dx is a single bin width.
+  if( dx <= 0 ) dx = bwidth;
+  
+  std::cout
+  <<"\n"
+  <<"################################################################################\n"
+  <<"Slicing up histogram: "<<h2->GetTitle()<<" ("<<nbins<<" bins total )\n"
+  //<<"Looping "<<N<<" bins between "<<xmin<<" and "<<xmax<<"\n"
+  <<"Creating "<<nslices<<" slices of width "<<dx<<"\n";
+  
+  // Define the centerpoint of the first slice region
+  float intervalwidth = (xmax-xmin) / float (nslices);
+  float xcen          = xmin + intervalwidth/2.;
+  float x1            = xcen - dx/2.;
+  float x2            = xcen + dx/2.; 
+  int   i_slice       = 0;
+  int   startbin      = -1;
+  bool  inBinGroup    = false;
+  float xsum          = 0.;
+
+  for(size_t i=1; i<nbins; i++){
+
+    float binx      = h2->GetXaxis()->GetBinCenter(i);
+    float lowEdge   = h2->GetXaxis()->GetBinLowEdge(i);
+    float highEdge  = lowEdge + bwidth;
+    bool  flag       = (binx >= x1 && binx < x2);
+    TH1D* h_tmp;
+    
+    if( flag )  std::cout<<"   "<<i<<"   binx = "<<binx<<"    xcen = "<<xcen<<"    x1-x2 "<<x1<<"-"<<x2<<"\n";
+      
+    // if we're already in a bin group and 
+    // we reach a bin that doesn't satisfy
+    // the range, then pack things up.
+    if( inBinGroup && !flag ) {
+      
+      h_tmp     = Make1DSlice( h2, startbin, i-1, name.c_str() );
+      vec_h1    .push_back( h_tmp );
+      vec_x     .push_back( xsum / (i-startbin) );
+      vec_nbins .push_back( i-startbin );
+      
+      i_slice++;
+      xsum = 0.;
+      startbin = -1;
+      x1 += intervalwidth;
+      x2 += intervalwidth;
+      flag = (binx >= x1 && binx < x2);
+      inBinGroup = false;
+    }
+    
+    if( i_slice >= nslices ) break;
+
+    if( flag ) {
+      xsum += binx;
+      if( startbin < 0 ) startbin = i;
+      inBinGroup = true;  
+    } 
+    
+  } // done looping over all bins
+
+}
 
 
 //######################################################################################
@@ -6940,194 +7064,130 @@ void ResolutionSliceLoop(
   TGraphAsymmErrors* gr_rms,
   std::vector<TF1> &fvFunc )
 {
-
-  // Find first biresn
-  float binWidth = h2d->GetXaxis()->GetBinWidth(1);
-  const size_t nbins=h2d->GetXaxis()->GetNbins();
-  int N = 0;
-  int binStart = -1;
-  for(size_t i=1; i<nbins; i++){
-    float lowEdge = h2d->GetXaxis()->GetBinLowEdge(i);
-    float highEdge = lowEdge + h2d->GetXaxis()->GetBinWidth(i);
-    if( lowEdge >= Emin && highEdge <= Emax ) {
-      N++;
-      if( binStart < 0 ) binStart = i;
-    }
-  }
-  if( nslice <= 0 ) nslice = N;
-  if( dE <= 0 ) dE = binWidth;
-  float E0 = Emin + dE/2.;
-
-  std::cout
-  <<"\n"
-  <<"################################################################################\n"
-  <<"Beginning resolution slice loop for histogram: "<<h2d->GetTitle()<<", "<<nbins<<" bins\n"
-  <<"Looping "<<N<<" bins between "<<Emin<<" and "<<Emax<<" MeV\n"
-  <<"Creating "<<nslice<<" slices of width "<<dE<<"\n";
-
-  TCanvas* cdefault = new TCanvas("default","default",500,500);
-  cdefault->cd();
   
-  TH1D* h_tmp;
+  gStyle->SetOptStat(1010);
+  gStyle->SetOptFit(1111);
+  
+  // Axis title and label size
+  float axls = 0.05;
+  float axts = 0.05;
+
+  // Make vector of 1D histograms corresponding to each slice,
+  // as well as the slice central energy and num bins in slice.
+  std::vector<TH1D*> vec_h1d;
+  std::vector<float> vec_E;
+  std::vector<int> vec_nbins;
+  
+  // Make a default canvas
+  TCanvas* cdefault = new TCanvas("default","default",200,200);
+
+  // Slice up the 2D histo
+  MakeSlices( h2d, vec_h1d, vec_E, vec_nbins, canvasName, Emin, Emax, nslice, dE);
+
+  // Make the multi-gauss functions which we'll be fitting to
+  // (and a separate single-gaussian BG function)
   TF1 f2g("f2g","[0]*exp( - pow( (x-[1])/( sqrt(2)*[2]), 2)) + [3]*exp( - pow( (x-[4])/( sqrt(2)*[5]), 2)) ",-1.2,1.2);
   TF1 fbg("fbg","[0]*exp( -pow((x-[1])/(sqrt(2)*[2]),2))",-1.2,1.2);
-  fbg.SetLineColor(kOrange-1);
+  fbg .SetLineColor(kOrange-1);
+  
+  // Define the main canvas array
   TCanvas* cArray;
   if( makeFitArray ){
     int npx_x = 250*nx;
     int npx_y = 250*ny;
     cArray = new TCanvas(Form("array_%s",canvasName.c_str()),Form("array_%s",canvasName.c_str()),npx_x,npx_y);
     cArray->Divide(nx,ny);
+    cArray->cd(1);
     gStyle->SetOptStat(1010);
     gStyle->SetOptFit(1111);
   }
-  float axls = 0.05;
-  float axts = 0.05;
- 
-  // Make vector of bin groups
-  float Erange = Emax - Emin;
-  float EintervalWidth = Erange / float(nslice);
-  float Ecen  = Emin + EintervalWidth/2.;
-  float E1    = Ecen - dE/2.;
-  float E2    = Ecen + dE/2.;
-  std::vector<float>                  sliceEnergy;
-  std::vector< std::vector<int > > binGroupVec;
-  std::vector<int> binGroup;
-  int i_slice = 0;
-  bool inBinGroup = false;
-  float Esum = 0;
-  std::cout<<"Grouping the bins\n";
-  for(size_t i=1; i<nbins; i++){
-    
-    float binEnergy = h2d->GetXaxis()->GetBinCenter(i);
-    float binWidth = h2d->GetXaxis()->GetBinWidth(i);
-    float lowEdge = h2d->GetXaxis()->GetBinLowEdge(i);
-    float highEdge = lowEdge + binWidth;
-    
-    bool flag = (binEnergy >= E1 && binEnergy < E2);
-   
-    if( flag )  
-      std::cout<<"   "<<i<<"   binE = "<<binEnergy<<"   flag "<<flag<<"  "<<Ecen<<"    E1-E2 "<<E1<<"-"<<E2<<"\n";
+  
+  // Loop through the slices and do the fits
+  for(size_t i=0; i<vec_h1d.size(); i++){
 
-    // if we're already in a bin group and 
-    // we reach a bin that doesn't satisfy
-    // the range, then pack things up.
-    if( inBinGroup && !flag ) {
-      inBinGroup = false;
-      E1 += EintervalWidth;
-      E2 += EintervalWidth;
-      binGroupVec.push_back(binGroup);
-      sliceEnergy.push_back( Esum / (i-binGroupVec[i_slice][0]) );
-      i_slice++;
-      Esum = 0;
-      binGroup.clear();
-      flag = (binEnergy >= E1 && binEnergy < E2);
-    }
-    
-    if( i_slice >= nslice ) break;
-
-    if( flag ) {
-      binGroup.push_back(i);
-      Esum += binEnergy;
-      inBinGroup = true;  
-    } 
-
-
-  }
-
-  std::cout<<"Bin group vector size = "<<binGroupVec.size()<<"\n";
-  for(size_t i=0; i<binGroupVec.size(); i++){
+    // by default, cd into some throw-away canvas to prevent weird
+    // formatting effects on the main canvas array (ROOT sucks)
     cdefault->cd();
-    
-    int nBinsInSlice = binGroupVec[i].size();
-    float E = sliceEnergy[i];
+   
+    // get info about this 1D projection
+    TH1D* h_tmp     = vec_h1d.at(i);
+    float binwidth  = vec_h1d.at(i)->GetXaxis()->GetBinWidth(1);
+    float rms       = vec_h1d.at(i)->GetRMS();
+    float nentries  = vec_h1d.at(i)->GetEntries();
+    float E         = vec_E.at(i);
+    float nbins     = vec_nbins.at(i);
+    float Ebinwidth = h2d->GetXaxis()->GetBinWidth(1);
+    float Eerr      = 0.5*nbins*Ebinwidth/std::sqrt(12);
 
-    h_tmp = Make1DSlice( h2d, binGroupVec[i][0], binGroupVec[i][nBinsInSlice-1], canvasName.c_str());
-     
     std::cout
     <<"\n"
     <<"-----------------------------------------------------------------------------------\n"
-    <<"Creating energy slice from "<<nBinsInSlice<<" bins, <E> = "<<sliceEnergy[i]<<" MeV ("<<h_tmp->GetEntries()<<" entries, RMS = "<<h_tmp->GetRMS()<<")\n";
+    <<"Fitting energy slice from "<<nbins<<" bins, <E> = "<<E<<" MeV ("<<nentries<<" entries, RMS = "<<rms<<")";
   
-    //if( h_tmp->GetEntries() > 50 ) {
-     
-      MultiGausFit( h_tmp, &f2g, &fbg, mode, param); 
+    // send projection to all-purpose gaussian fitting routine
+    MultiGausFit( h_tmp, &f2g, &fbg, mode, param); 
 
-      // Gaussian fit sigma
-      float sig       = f2g.GetParameter(2)*100.;
-      float sig_err   = f2g.GetParError(2)*100.;
-      float sig_err_l = sig_err;
-      float sig_err_u = sig_err;
-      float sigRMS    = h_tmp->GetRMS()*100.;
+    // Gaussian fit sigma
+    float sig       = f2g.GetParameter(2)*100.;
+    float sig_err   = f2g.GetParError(2)*100.;
+    float sig_err_l = sig_err;
+    float sig_err_u = sig_err;
+    float sigRMS    = rms*100.;
 
-      //..............................
-      // incorporate the difference between RMS and sigma 
-      // into the sigma error
-      if( useHybridRes ) {
+    // incorporate the difference between RMS and sigma 
+    // into the sigma error
+    if( useHybridRes ) {
 
-        // on very rare occassions the fit returns an abnormally high error. If the fit error
-        // is *larger* than the fit-RMS difference, something clearly went wrong so redefine 
-        // the error bars
-       // sig_err_u = std::sqrt( std::pow(sig_err,2) + std::pow( (sigRMS - sig), 2) );
-        if( sig_err > sigRMS - sig  ) {
-          sig_err_u = fabs(double(sigRMS-sig));
-          sig_err_l = fabs(double(sigRMS-sig));
-        } 
-        // inflate one error bar based on RMS
-        else if( sigRMS >= sig ) { 
-          sig_err_u = std::sqrt( std::pow(sig_err,2) + std::pow( (sigRMS - sig), 2) );
-        } else {
-          sig_err_l = std::sqrt( std::pow(sig_err,2) + std::pow( (sig - sigRMS), 2) );
-        }
-       
+      // on very rare occassions the fit returns an abnormally high error. If the fit error
+      // is *larger* than the fit-RMS difference, something clearly went wrong so redefine 
+      // the error bars
+      // sig_err_u = std::sqrt( std::pow(sig_err,2) + std::pow( (sigRMS - sig), 2) );
+      if( sig_err > sigRMS - sig  ) {
+        sig_err_u = fabs(double(sigRMS-sig));
+        sig_err_l = fabs(double(sigRMS-sig));
+      } 
+      // inflate one error bar based on RMS
+      else if( sigRMS >= sig ) { 
+        sig_err_u = std::sqrt( std::pow(sig_err,2) + std::pow( (sigRMS - sig), 2) );
+      } else {
+        sig_err_l = std::sqrt( std::pow(sig_err,2) + std::pow( (sig - sigRMS), 2) );
       }
-      // ..............................
-      
-      //if( binEnergy > Emin ) {
-      std::cout<<"  Setting point on sigma graph:   "<<sig<<" (+ "<<sig_err_u<<" - "<<sig_err_l<<")\n";
-      std::cout<<"  Setting point on RMS graph:     "<<sigRMS<<"\n";
-      std::cout<<"  slice energy            "<<sliceEnergy[i]<<"\n";
-      float xerr = 0.5*(nBinsInSlice)*binWidth/std::sqrt(12);
-      std::cout<<"  x_err = "<<xerr<<"\n";
-      gr->SetPoint      (gr->GetN(),   sliceEnergy[i], sig);
-      std::cout<<"     - point added\n";
-      gr->SetPointError (gr->GetN()-1,  xerr, xerr, sig_err_l, sig_err_u);
-      std::cout<<"     - point error added\n";
-      gr_rms->SetPoint      (gr_rms->GetN(),    sliceEnergy[i], sigRMS);
-      std::cout<<"     - RMS point added\n";
-      gr_rms->SetPointError (gr_rms->GetN()-1,  xerr, xerr, 0., 0.);
-      std::cout<<"     - RMS error added\n";
-
-      fvFunc.push_back(f2g);
-      //}
-      
-    //}
+       
+    } 
+    
+    // add points to all the TGraphs
+    std::cout<<"  Setting point on sigma graph:   "<<sig<<" (+ "<<sig_err_u<<" - "<<sig_err_l<<")\n";
+    std::cout<<"  Setting point on RMS graph:     "<<sigRMS<<"\n";
+    std::cout<<"  slice energy            "<<E<<" +/- "<<Eerr<<"\n";
+    gr      ->SetPoint      (gr->GetN(),    E, sig);
+    gr      ->SetPointError (gr->GetN()-1,  Eerr, Eerr, sig_err_l, sig_err_u);
+    gr_rms  ->SetPoint      (gr_rms->GetN(),E, sigRMS);
+    gr_rms  ->SetPointError (gr_rms->GetN()-1, Eerr, Eerr, 0., 0.);
+ 
+    // save the fit function   
+    fvFunc.push_back(f2g);
   
+    // plot it in the array
     if( makeFitArray && i < nx*ny ) {
-      std::cout<<"  Putting onto array plot\n";
-      //gStyle->SetOptFit(1);
       cArray->cd(i+1);
       gStyle->SetOptStat(1010);
       gStyle->SetOptFit(1111);
-      //gStyle->SetOptStat(1110);
+      //gStyle->SetOptFit(1111);
       if( xmin != xmax && xmax > xmin ) h_tmp->GetXaxis()->SetRangeUser(xmin,xmax);
-      h_tmp->SetTitle(Form("%s: %4.1f +/- %4.1f MeV",tag.c_str(),sliceEnergy[i],dE/2.));
+      h_tmp->SetTitle(Form("%s: %4.1f +/- %4.1f MeV",tag.c_str(),E,dE/2.));
       h_tmp->SetTitleSize(0.06);
-//      h_tmp->GetXaxis()->SetTitle("( E_{reco} - E_{true} ) / E_{true}");
-//      h_tmp->GetXaxis()->SetTitle("( reco - true ) / true");
       h_tmp->GetXaxis()->SetTitle(h2d->GetYaxis()->GetTitle());
       gPad->SetMargin(0.10,0.10,0.15,0.10);
       FormatAxes(h_tmp, axts, axls, 1.0, 1.0);
       h_tmp->DrawCopy();
       if( fbg.GetParameter(0) ) {
-        std::cout<<"Background gaus has N = "<<fbg.GetParameter(0)<<" --> plotting!\n";
-        fbg.DrawCopy("same");
-        //gStyle->SetOptFit(1111);
+        std::cout<<"  Background gaus has N = "<<fbg.GetParameter(0)<<" --> plotting!\n";
+        fbg.DrawCopy("lsame");
       }
-      cdefault->cd();
+
     }
   
- } 
+ }// done looping through all slices 
 
 }
 
@@ -7157,138 +7217,84 @@ void ResolutionSliceLoop(
 
 
 
-
 void ParamDistOverlay(
   const TH2D* h2d, float Emin, float Emax, int nslice, float dE, 
   std::string canvasName, std::string tag, int nx, int ny,
   TF1* func_in)
 {
-
-
-  // Find first biresn
-  float binWidth = h2d->GetXaxis()->GetBinWidth(1);
-  const size_t nbins=h2d->GetXaxis()->GetNbins();
-  int N = 0;
-  int binStart = -1;
-  for(size_t i=1; i<nbins; i++){
-    float lowEdge = h2d->GetXaxis()->GetBinLowEdge(i);
-    float highEdge = lowEdge + h2d->GetXaxis()->GetBinWidth(i);
-    if( lowEdge >= Emin && highEdge <= Emax ) {
-      N++;
-      if( binStart < 0 ) binStart = i;
-    }
-  }
-  if( nslice <= 0 ) nslice = N;
-  if( dE <= 0 ) dE = binWidth;
-  float E0 = Emin + dE/2.;
-
-  std::cout
-  <<"\n"
-  <<"################################################################################\n"
-  <<"Beginning overlaying distributions for "<<h2d->GetTitle()<<", "<<nbins<<" bins\n"
-  <<"Looping "<<N<<" bins between "<<Emin<<" and "<<Emax<<" MeV\n"
-  <<"Creating "<<nslice<<" slices of width "<<dE<<"\n";
-
-  TCanvas* cdefault = new TCanvas("default","default",500,500);
-  cdefault->cd();
   
-  TH1D* h_tmp;
-  TCanvas* cArray;
+  // Axis title and label size
+  float axls = 0.05;
+  float axts = 0.05;
+
+  // Make vector of 1D histograms corresponding to each slice,
+  // as well as the slice central energy and num bins in slice.
+  std::vector<TH1D*> vec_h1d;
+  std::vector<float> vec_E;
+  std::vector<int> vec_nbins;
+  
+  // Make a default canvas
+  TCanvas* cdefault = new TCanvas("default","default",200,200);
+
+  // Slice up the 2D histo
+  MakeSlices( h2d, vec_h1d, vec_E, vec_nbins, canvasName, Emin, Emax, nslice, dE);
+  
+  // Define the main canvas array
   int npx_x = 250*nx;
   int npx_y = 250*ny;
-  cArray = new TCanvas(Form("array_%s",canvasName.c_str()),Form("array_%s",canvasName.c_str()),npx_x,npx_y);
+  TCanvas* cArray = new TCanvas(Form("array_%s",canvasName.c_str()),Form("array_%s",canvasName.c_str()),npx_x,npx_y);
   cArray->Divide(nx,ny);
+  cArray->cd(1);
   gStyle->SetOptStat(1010);
   gStyle->SetOptFit(1111);
   
-  float axls = 0.05;
-  float axts = 0.05;
- 
-  // Make vector of bin groups
-  float Erange = Emax - Emin;
-  float EintervalWidth = Erange / float(nslice);
-  float Ecen  = Emin + EintervalWidth/2.;
-  float E1    = Ecen - dE/2.;
-  float E2    = Ecen + dE/2.;
-  std::vector<float>                  sliceEnergy;
-  std::vector< std::vector<int > > binGroupVec;
-  std::vector<int> binGroup;
-  int i_slice = 0;
-  bool inBinGroup = false;
-  float Esum = 0;
-  std::cout<<"Grouping the bins\n";
-  for(size_t i=1; i<nbins; i++){
-    float binEnergy = h2d->GetXaxis()->GetBinCenter(i);
-    float binWidth = h2d->GetXaxis()->GetBinWidth(i);
-    float lowEdge = h2d->GetXaxis()->GetBinLowEdge(i);
-    float highEdge = lowEdge + binWidth;
-    bool flag = (binEnergy >= E1 && binEnergy < E2);
-    if( flag )  
-      std::cout<<"   "<<i<<"   binE = "<<binEnergy<<"   flag "<<flag<<"  "<<Ecen<<"    E1-E2 "<<E1<<"-"<<E2<<"\n";
-    // if we're already in a bin group and 
-    // we reach a bin that doesn't satisfy
-    // the range, then pack things up.
-    if( inBinGroup && !flag ) {
-      inBinGroup = false;
-      E1 += EintervalWidth;
-      E2 += EintervalWidth;
-      binGroupVec.push_back(binGroup);
-      sliceEnergy.push_back( Esum / (i-binGroupVec[i_slice][0]) );
-      i_slice++;
-      Esum = 0;
-      binGroup.clear();
-      flag = (binEnergy >= E1 && binEnergy < E2);
-    }
-    if( i_slice >= nslice ) break;
-    if( flag ) {
-      binGroup.push_back(i);
-      Esum += binEnergy;
-      inBinGroup = true;  
-    } 
-  }
+  // Loop through the slices and do the fits
+  for(size_t i=0; i<vec_h1d.size(); i++){
 
-  std::cout<<"Bin group vector size = "<<binGroupVec.size()<<"\n";
-  for(size_t i=0; i<binGroupVec.size(); i++){
+    // by default, cd into some throw-away canvas to prevent weird
+    // formatting effects on the main canvas array (ROOT sucks)
     cdefault->cd();
-    int nBinsInSlice = binGroupVec[i].size();
-    float E = sliceEnergy[i];
-
-    h_tmp = Make1DSlice( h2d, binGroupVec[i][0], binGroupVec[i][nBinsInSlice-1], canvasName.c_str());
-    
-    float bwidth = h_tmp->GetBinWidth(1);
- 
-    //TF1 * func = (TF1*)func_in->Clone("copy");
-    func_in->SetLineColor(kGreen+2);
+   
+    // get info about this 1D projection
+    TH1D* h_tmp     = vec_h1d.at(i);
+    float binwidth  = vec_h1d.at(i)->GetXaxis()->GetBinWidth(1);
+    float rms       = vec_h1d.at(i)->GetRMS();
+    float nentries  = vec_h1d.at(i)->GetEntries();
+    float E         = vec_E.at(i);
+    float nbins     = vec_nbins.at(i);
+    float Ebinwidth = h2d->GetXaxis()->GetBinWidth(1);
+    float Eerr      = 0.5*nbins*Ebinwidth/std::sqrt(12);
+   
+    // format and scale scale the function
+    func_in -> SetLineColor(kGreen+2);
+    func_in->SetParameter("scale",h_tmp->Integral()*binwidth);
     func_in->SetParameter("energy",E);
-
-    double scaleFac = h_tmp->Integral() * bwidth;
-    std::cout<<"TH1D integral "<<h_tmp->Integral()<<"   bwidth "<<bwidth<<"\n";
-    func_in->SetParameter("scale",h_tmp->Integral()*bwidth);
-    std::cout<<"Scale = "<<func_in->GetParameter("scale")<<"\n";
     
-     
-    std::cout
-    <<"\n"
-    <<"-----------------------------------------------------------------------------------\n"
-    <<"Creating energy slice from "<<nBinsInSlice<<" bins, <E> = "<<sliceEnergy[i]<<" MeV ("<<h_tmp->GetEntries()<<" entries, RMS = "<<h_tmp->GetRMS()<<")\n";
-
+    // plot it
     if( i < nx*ny ) {
       cArray->cd(i+1);
-      gStyle->SetTitleFont(42,"t");
+      //gStyle->SetTitleFont(42,"t");
       gStyle->SetOptStat(1010);
-      h_tmp->SetTitle(Form("%s: %5.2f +/- %5.2f MeV",tag.c_str(),sliceEnergy[i],dE/2.));
+      h_tmp->SetTitle(Form("%s: %5.2f +/- %5.2f MeV",tag.c_str(),E,dE/2.));
       h_tmp->SetTitleSize(0.06);
       h_tmp->GetXaxis()->SetTitle(h2d->GetYaxis()->GetTitle());
       gPad->SetMargin(0.10,0.10,0.15,0.10);
       FormatAxes(h_tmp, axts, axls, 1.0, 1.0);
       h_tmp->DrawCopy();
       func_in->DrawCopy("LSAME"); 
-      cdefault->cd();
     }
+      
   
- } 
+  
+ }// done looping through all slices 
 
 }
+
+
+
+
+
+
 
 void PlotRecombCurves () {
   

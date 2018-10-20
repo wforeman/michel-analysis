@@ -295,6 +295,13 @@ double _funcP_L(double*,double*);
 double _funcP_Q_Gaus(double*,double*);
 double _funcP_L_Gaus(double*,double*);
 
+void MakeSlices( const TH2D* h2, 
+                std::vector<TH1D*>& vec_h1, 
+                std::vector<float>& vec_x,
+                std::vector<int>& vec_nbins,
+                std::string name, 
+                float xmin, float xmax, int nslices, float dx);
+
 void ResolutionSliceLoop(
   const TH2D* h2d, float Emin, float Emax,int n, float dE, 
   bool makeFitArray, std::string canvasName, std::string tag, int nx, int ny, float xmin, float xmax,
