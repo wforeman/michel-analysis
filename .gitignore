@@ -1,0 +1,5 @@
+*.pdf
+*.root
+*.png
+*.swp
+.DS_STORE
