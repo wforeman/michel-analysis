@@ -326,7 +326,7 @@ void ResolutionSliceLoop(
   TGraphAsymmErrors* gr_mean);
 
 void ParamDistOverlay(
-  const TH2D* h2d, float Emin, float Emax, int nslice, float dE, 
+  const TH2D* h2d, float Emin, float Emax, int nslice, float dE, float min, float max, 
   std::string canvasName, std::string tag, int nx, int ny,
   TF1* func_in );
 
@@ -907,20 +907,27 @@ void FormatAxes(TGraphAsymmErrors* g, float axisTitleSize, float axisLabelSize, 
   g->GetYaxis()->SetTitleOffset(yOffset);
 }
 
-void FormatTGraph(TGraphAsymmErrors* g, Color_t mc, Color_t lc, int ms, int ls, float msize){
+void FormatTGraph(TGraphAsymmErrors* g, Color_t mc, Color_t lc, int ms, int ls, float msize, int lwidth){
   g->SetMarkerColor(mc);
   g->SetLineColor(lc);
   g->SetMarkerStyle(ms);
   g->SetLineStyle(ls);
   g->SetMarkerSize(msize);
+  g->SetLineWidth(lwidth);
 }
-
-void FormatTGraph(TGraphErrors* g, Color_t mc, Color_t lc, int ms, int ls, float msize){
+void FormatTGraph(TGraphErrors* g, Color_t mc, Color_t lc, int ms, int ls, float msize, int lwidth){
   g->SetMarkerColor(mc);
   g->SetLineColor(lc);
   g->SetMarkerStyle(ms);
   g->SetLineStyle(ls);
   g->SetMarkerSize(msize);
+  g->SetLineWidth(lwidth);
+}
+void FormatTGraph(TGraphAsymmErrors* g, Color_t mc, Color_t lc, int ms, int ls, float msize){
+  FormatTGraph(g,mc,lc,ms,ls,msize,1);
+}
+void FormatTGraph(TGraphErrors* g, Color_t mc, Color_t lc, int ms, int ls, float msize){
+  FormatTGraph(g,mc,lc,ms,ls,msize,1);
 }
 
 void CopyTGraphFormat(TGraphAsymmErrors* g1, TGraphAsymmErrors* g2, bool copyTitles = false){
