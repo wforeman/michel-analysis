@@ -2,6 +2,7 @@
 
 bool fRepMCflag = false;
 bool fDoLikelihoodFit = true;
+bool fDoBareElectrons = true;
 
 float fChargeRes;
 float fPhelRes;
@@ -500,7 +501,7 @@ void Init(int mode) {
   fFuncP_L ->SetParameter("scale",1);
 
   // Generic Gaussian for isolated el showers
-  funcP_Q_Gaus = new TF1("funcP_Q_Gaus","[2]*exp(-0.5*((x-[0])/[1])^2)/([1]*sqrt(2*3.14159))");
+  funcP_Q_Gaus = new TF1("funcP_Q_Gaus","exp(-0.5*((x-[0])/[1])^2)/([1]*sqrt(2*3.14159))");
   funcP_Q_Gaus_fp.resize(2);
   funcP_Q_Gaus_fp[0]   = new TF1("funcP_Q_Gaus_muPeak","[0] + [1]*x",Emin,Emax);
     funcP_Q_Gaus_fp[0] ->SetParameter(0,-9136.); // +/- 2572
@@ -514,7 +515,7 @@ void Init(int mode) {
   fFuncP_Q_Gaus ->SetParName(1,"scale");
   fFuncP_Q_Gaus ->SetParameter("scale",1);
   
-  funcP_L_Gaus = new TF1("funcP_L_Gaus","[2]*exp(-0.5*((x-[0])/[1])^2)/([1]*sqrt(2*3.14159))");
+  funcP_L_Gaus = new TF1("funcP_L_Gaus","exp(-0.5*((x-[0])/[1])^2)/([1]*sqrt(2*3.14159))");
   funcP_L_Gaus_fp.resize(2);
   funcP_L_Gaus_fp[0]   = new TF1("funcP_L_Gaus_muPeak","[0] + [1]*x",Emin,Emax);
     funcP_L_Gaus_fp[0] ->SetParameter(0,-8735); // +/- 2572
@@ -2602,7 +2603,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower Q
     ResolutionSliceLoop(
       hEvs_Q, Emin, Emax, 9, 1.,
-      true, "Q", "Shower Q",3,3,0.,2500e3,//-9,-9,
+      false, "Q", "Shower Q",3,3,0.,2500e3,//-9,-9,
       1,-20., false,
       gr_Qsig,
       gr_Qrms,
@@ -2611,7 +2612,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower L
     ResolutionSliceLoop(
       hEvs_L, Emin, Emax, 9, 1.,
-      true, "L", "Shower L",3,3,0.,2500e3,
+      false, "L", "Shower L",3,3,0.,2500e3,
       0,-0.10, false,
       gr_Lsig,
       gr_Lrms,
@@ -3002,6 +3003,8 @@ void EnergyPlots(bool doResolutionSlices = false){
     c_L_params->cd(i+1);
     gPad->SetMargin(0.15,0.05,0.15,0.10);
     gr_Lparam[i]->Draw("AP");
+    gStyle->SetOptFit(1);
+    gPad->Update();
   }
 
 
@@ -3036,7 +3039,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel Trk
     ResolutionSliceLoop(
       hEvsRes_E_Trk, Emin, Emax, 9, 1.,
-      true, "EQ_Trk", "Q-only Trk Energy",3,3,-1.2,1.2,
+      false, "EQ_Trk", "Q-only Trk Energy",3,3,-1.2,1.2,
       0, 0.33, false,
       //1, 20, false,
       gr_sigma_Q_Trk,
@@ -3045,7 +3048,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower E_Q
     ResolutionSliceLoop(
       hEvsRes_E_Q, Emin, Emax, 9, 1.,
-      true, "EQ", "Q-only Energy",3,3,-1.2,1.2,
+      false, "EQ", "Q-only Energy",3,3,-1.2,1.2,
       //1,-1, useHybridRes,
       0,0.33, useHybridRes,
       gr_sigma_Q,
@@ -3054,7 +3057,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower E_QL
     ResolutionSliceLoop(
       hEvsRes_E_QL, Emin, Emax, 9, 1.,
-      true, "EQL", "Q+L Energy",3,3,-1.2,1.2,
+      false, "EQL", "Q+L Energy",3,3,-1.2,1.2,
       //1,-1, useHybridRes,
       0,0.33, useHybridRes,
       gr_sigma_QL,
@@ -3166,7 +3169,7 @@ void EnergyPlots(bool doResolutionSlices = false){
 
 
 
-    if( 0 ) {
+    if( fDoBareElectrons ) {
       
     // --------------------------------------------------------------------
     // 4.2) Bare electron shower resolution plots. Here we will use the bare
@@ -3195,8 +3198,8 @@ void EnergyPlots(bool doResolutionSlices = false){
     int Eres_bins = 60;
     float Eres_x1   = 2.5; //2.5;
     float Eres_x2   = 62.5; //62.5;
-    float res_bins = 300; // 1200
-    float res_max = 1.5;
+    float res_bins = 400; // 1200
+    float res_max = 1.0;
     hEvs_Q  = new TH2D("Evs_Q","Q vs. true Michel energy dep.;True energy deposited [MeV];Reco charge [e^{-}]",Eres_bins,Eres_x1,Eres_x2,200,0.,2000e3);
     hEvs_L  = new TH2D("Evs_L","L vs. true Michel energy dep.;True energy deposited [MeV];Reco light [#gamma]",Eres_bins,Eres_x1,Eres_x2,200,0.,2000e3);
     hEvsRes_E_Trk = new TH2D("EvsRes_E_Trk","Electron ion. track;True energy deposited [MeV];( reco - true ) / true",Eres_bins, Eres_x1, Eres_x2,res_bins, -1.*res_max, res_max); 
@@ -3310,36 +3313,36 @@ void EnergyPlots(bool doResolutionSlices = false){
     std::vector< std::vector< std::vector< float >>> vParams_Q = 
     { // SN = 7:1
       {
-        { -1.546e4, 2.625e4 },        // A
-        { 0.3856,   0.7209, 0.03302 } // B
+        { -1.911e4, 2.625e4 },        // A
+        { 0.5444,   0.9897, 0.05116 } // B
       }, 
       // SN = 10:1
       {
-        { -1.422e4, 2.693e4 },        // A
-        { 0.4268,   0.8902, 0.02692 } // B
+        { -1.693e4, 2.714e4 },        // A
+        { 0.4485,   0.9638, 0.03179 } // B
       },
       // SN = 70:1
       {
-        { -1.093e4, 2.776e4 },        // A
-        { 0.3484,   0.938,  0.01253 } // B
+        { -1.154e4, 2.782e4 },        // A
+        { 0.3939,   1.053,  0.01507 } // B
       }
     };
 
     std::vector< std::vector< std::vector< float >>> vParams_L = 
     { // LY 0
       {
-        { -2.568e4, 2.591e4   },        // A
-        { 1.145,    0.6122,   -0.007686 } // B
+        { -2.275e4, 2.557e4   },        // A
+        { 1.294,    0.7142,   0.0233 } // B
       }, 
       // LY 1
       {
-        { -1.007e4, 2.56e4  },        // A
-        { 0.5276,   0.5431, 0.00642 } // B
+        { -8248, 2.543e4  },        // A
+        { 0.7191,   0.9021, 0.03174 } // B
       },
       // LY 2
       {
-        { -9185,    2.551e4  },        // A
-        {  0.4485,  0.7032, 0.01114 } // B
+        { -7983,    2.543e4  },        // A
+        {  0.4508,  0.7176, 0.01284 } // B
       }
     };
 
@@ -3405,7 +3408,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons trk nominal
     ResolutionSliceLoop(
       hEvsRes_E_Trk, Emin, Emax, 10, 1.,
-      false, "EQ_Trk_e_nom", "Q-only Energy (electron ion.)",3,3,-1.2,1.2,
+      true, "EQ_Trk_e_nom", "Q-only Energy (electron ion.)",3,3,-0.5,0.5,
       0, 0.15, false,
       grEl_sig_Q_Trk_nom,
       grEl_rms_Q_Trk_nom);
@@ -3413,24 +3416,24 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons shower E_Q nominal
     ResolutionSliceLoop(
       hEvsRes_E_Q, Emin, Emax, 10, 1.,
-      false, "EQ_e_nom", "Q-only Energy",3,3,-1.2,1.2,
-      0, 0.15, false,
+      true, "EQ_e_nom", "Q-only Energy",3,3,-0.5,0.5,
+      0, -0.15, false,
       grEl_sig_Q_nom,
       grEl_rms_Q_nom);
     
     // Isolated electrons shower E_QL nominal
     ResolutionSliceLoop(
       hEvsRes_E_QL, Emin, Emax, 10, 1.,
-      false, "EQL_e_nom", "Q+L Energy",3,3,-1.2,1.2,
-      0, 0.15, false,
+      true, "EQL_e_nom", "Q+L Energy",3,3,-0.5,0.5,
+      0, -0.15, false,
       grEl_sig_QL_nom,
       grEl_rms_QL_nom);
     
     // Isolated electrons shower E_QL LogL nominal
     ResolutionSliceLoop(
       hEvsRes_E_QL_LogL, Emin, Emax, 10, 1.,
-      true, "EQL_LogL_e_nom", "Q+L Energy (Log-L)",3,3,-1.2,1.2,
-      0, 0.15, false,
+      true, "EQL_LogL_e_nom", "Q+L Energy (Log-L)",3,3,-0.5,0.5,
+      0, -0.15, false,
       grEl_sig_QL_LogL_nom,
       grEl_rms_QL_LogL_nom);
    
@@ -3467,9 +3470,8 @@ void EnergyPlots(bool doResolutionSlices = false){
     fSmearFactor[1]=0.1;
     fSmearTruePE = true;
     fSmearMode = 1;    
-    
   
-    fMaxMCEvents = 100000;
+    //fMaxMCEvents = 100000;
      
     // Now do all hypothetical scenarios 
     for(size_t i_sn = 0; i_sn < 3; i_sn++) { 
@@ -3532,13 +3534,13 @@ void EnergyPlots(bool doResolutionSlices = false){
           ResolutionSliceLoop(
             hEvsRes_E_Trk, Emin, Emax, 10, 1.,
             true, Form("Trk_e_sn%lu_ly%lu",i_sn, i_ly), "Electron Track Energy",3,3,-1.2,1.2,
-            0, 0.33, false,
+            0, 0.15, false,
             grEl_sig_Q_Trk_sn[i_sn],
             grEl_rms_Q_Trk_sn[i_sn]);
           
           ResolutionSliceLoop(
             hEvs_Q, Emin, Emax, 10, 1.,
-            true, Form("Q_e_sn%lu",i_sn), "Shower Q",3,3,-9.,-9.,
+            false, Form("Q_e_sn%lu",i_sn), "Shower Q",3,3,-9.,-9.,
             0, -0.10, false,
             grEl_Qdist_sig_sn[i_sn],
             grEl_Qdist_rms_sn[i_sn],
@@ -3551,7 +3553,7 @@ void EnergyPlots(bool doResolutionSlices = false){
           grEl_Ldist_mean_ly[i_ly] = new TGraphAsymmErrors();
           ResolutionSliceLoop(
             hEvs_L, Emin, Emax, 10, 1.,
-            true, Form("L_e_ly%lu", i_ly), "Shower L",3,3,-9.,-9.,
+            false, Form("L_e_ly%lu", i_ly), "Shower L",3,3,-9.,-9.,
             0, -0.10, false,
             grEl_Ldist_sig_ly[i_ly],
             grEl_Ldist_rms_ly[i_ly],
@@ -3560,22 +3562,22 @@ void EnergyPlots(bool doResolutionSlices = false){
         
         ResolutionSliceLoop(
           hEvsRes_E_Q, Emin, Emax,10,1., 
-          false, Form("EQ_e_sn%lu_ly%lu",i_sn, i_ly), "Q-only Shower Energy",3,3,-1.2,1.2,
-          0, 0.10, false,
+          false, Form("EQ_e_sn%lu_ly%lu",i_sn, i_ly), "Q-only Shower Energy",3,3,-0.5,0.5,
+          0, -0.10, false,
           grEl_sig_Q_sn_ly[i_sn][i_ly],
           grEl_rms_Q_sn_ly[i_sn][i_ly]);
 
         ResolutionSliceLoop(
           hEvsRes_E_QL,Emin, Emax,10,1.,
-          false, Form("EQL_e_sn%lu_ly%lu",i_sn, i_ly), "Q+L Shower Energy",3,3,-1.2,1.2,
-          0, 0.10, false,
+          false, Form("EQL_e_sn%lu_ly%lu",i_sn, i_ly), "Q+L Shower Energy",3,3,-0.5,0.5,
+          0, -0.10, false,
           grEl_sig_QL_sn_ly[i_sn][i_ly],
           grEl_rms_QL_sn_ly[i_sn][i_ly]);
         
         ResolutionSliceLoop(
           hEvsRes_E_QL_LogL,Emin, Emax,10,1.,
-          false, Form("EQL_LogL_e_sn%lu_ly%lu",i_sn, i_ly), "Q+L Shower Energy",3,3,-1.2,1.2,
-          0, 0.10, false,
+          true, Form("EQL_LogL_e_sn%lu_ly%lu",i_sn, i_ly), "Q+L Shower Energy",3,3,-0.5,0.5,
+          0, -0.10, false,
           grEl_sig_QL_LogL_sn_ly[i_sn][i_ly],
           grEl_rms_QL_LogL_sn_ly[i_sn][i_ly]);
 
@@ -3722,6 +3724,9 @@ void EnergyPlots(bool doResolutionSlices = false){
       gStyle->SetOptFit(1111);
       grEl_Ldist_rsig_nom->Fit(funcP_L_Gaus_fp[1]);
       grEl_Ldist_rsig_nom->DrawClone("AP");
+      gStyle->SetOptFit(1);
+      gPad->Update();
+      
     
 
     // -------------------------------
@@ -4249,6 +4254,8 @@ void EnergyPlots(bool doResolutionSlices = false){
   } // End resolution slices
   //gStyle->SetOptFit(1111);
   fSmearTruePE=false;
+
+  outFile->Close();
    
 }
 
@@ -7548,7 +7555,7 @@ void ResolutionSliceLoop(
       cArray->cd(i+1);
       gPad->SetMargin(0.10,0.10,0.15,0.10);
       FormatAxes(h_tmp, axts, axls, 1.0, 1.0);
-      h_tmp->GetXaxis()->SetNdivisions(510);
+      h_tmp->GetXaxis()->SetNdivisions(505);
       h_tmp->SetTitle(Form("%s: %4.1f +/- %4.1f MeV",tag.c_str(),E,dE/2.));
       h_tmp->SetTitleSize(0.06);
       h_tmp->GetXaxis()->SetTitle(h2d->GetYaxis()->GetTitle());
@@ -7662,6 +7669,7 @@ void ParamDistOverlay(
       h_tmp->GetXaxis()->SetTitle(h2d->GetYaxis()->GetTitle());
       h_tmp->GetXaxis()->SetRangeUser(min,max);
       h_tmp->SetLineWidth(2);
+      h_tmp->GetXaxis()->SetNdivisions(505);
       FormatAxes(h_tmp, axts, axls, 1.0, 1.0);
       h_tmp->DrawCopy();
       func_in->DrawCopy("LSAME"); 
