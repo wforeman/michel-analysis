@@ -306,6 +306,7 @@ void ResolutionSliceLoop(
   const TH2D* h2d, float Emin, float Emax,int n, float dE, 
   bool makeFitArray, std::string canvasName, std::string tag, int nx, int ny, float xmin, float xmax,
   int mode, float param, bool hybridRes,
+  float grEmin, float grEmax,
   TGraphAsymmErrors* gr,
   TGraphAsymmErrors* gr_rms,
   std::vector<TF1> &f);
@@ -314,6 +315,7 @@ void ResolutionSliceLoop(
   const TH2D* h2d, float Emin, float Emax, int n, float dE,
   bool makeFitArray, std::string canvasName, std::string tag, int nx, int ny, float xmin, float xmax,
   int mode, float param, bool hybridRes,
+  float grEmin, float grEmax,
   TGraphAsymmErrors* gr,
   TGraphAsymmErrors* gr_rms);
 
@@ -321,6 +323,7 @@ void ResolutionSliceLoop(
   const TH2D* h2d, float Emin, float Emax, int n, float dE,
   bool makeFitArray, std::string canvasName, std::string tag, int nx, int ny, float xmin, float xmax,
   int mode, float param, bool hybridRes,
+  float grEmin, float grEmax,
   TGraphAsymmErrors* gr,
   TGraphAsymmErrors* gr_rms,
   TGraphAsymmErrors* gr_mean);
