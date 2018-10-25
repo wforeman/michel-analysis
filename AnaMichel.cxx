@@ -1,8 +1,11 @@
 #include "anamichel.h"
 
-bool fRepMCflag = false;
 bool fDoLikelihoodFit = true;
 bool fDoBareElectrons = true;
+bool fSavePlots = true;
+
+int fMaxMCEvents = -200000;
+int fMaxMCEvents_BareElShowers = 100000;
 
 float fChargeRes;
 float fPhelRes;
@@ -19,7 +22,6 @@ std::default_random_engine generator;
 float fFidMarginX;
 float fFidMarginY;
 float fFidMarginZ;
-
 
 
 
@@ -1483,31 +1485,27 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
           float energyQ_2R  = ( Q_ion/fRecombIon 
                                 + Q_phot/fRecombPh ) * fWion; // shower energy (non-uniform recomb)
 
-          // Calculate Q+L based energy (simplest case, no recomb assumption needed)
-          float energyQL        = ( std::max(float(0),Q_shower) + std::max(float(0),L_shower) ) * fWph; 
-           
-            //std::cout<<"Q "<<Q_shower<<"   L "<<L_shower<<"  "<<Q_ion<<"   "<<Q_phot<<"\n"; 
-            
-            float trueE_dep   = fTrue_ElShowerEnergyDep;
-            float trueE       = trueE_dep; if( fUseTrueEnergy ) trueE = fTrue_ElEnergy;
-            float trueL_shower = fTrue_ElShowerPhotons;
-            float trueQ_shower = fTrue_ElShowerCharge;
-    
 
-          // Log-likelihood method.  First set parameters:
-          float E_ll = 1.;
-          float E_ul = 150.;
-          float dE = 0.01;
+          // Calculate Q+L based energy
+          float energyQL      = -9.;
           float energyQL_LogL = -9.;
-          f_LogLEnergyQL->SetParameter("aveDriftTime",fAveDriftTime);
-          f_LogLEnergyQL->SetParameter("elecLifetime",fElectronLifetime);
-          f_LogLEnergyQL->SetParameter("fracVis",fElShowerVis);
-          f_LogLEnergyQL->SetParameter("chargeRes", 0.); // assume 0 for now
-          f_LogLEnergyQL->SetParameter("peRes",     0.); // assume 0 for now
-          f_LogLEnergyQL->SetParameter("L",L_shower);
-          f_LogLEnergyQL->SetParameter("Q_ion",Q_shower);
-          if( fDoLikelihoodFit ) {
-            if( Q_shower > 0 && L_shower > 0 ){ 
+          if( Q_shower > 0 && L_shower > 0 ) {
+
+            // simplest case, no recomb assumption needed
+            energyQL = ( Q_shower + L_shower )  * fWph; 
+          
+            // Log-likelihood method.  First set parameters:
+            if( fDoLikelihoodFit ) {
+              float E_ll = 1.;
+              float E_ul = 150.;
+              float dE = 0.01;
+              f_LogLEnergyQL->SetParameter("aveDriftTime",fAveDriftTime);
+              f_LogLEnergyQL->SetParameter("elecLifetime",fElectronLifetime);
+              f_LogLEnergyQL->SetParameter("fracVis",fElShowerVis);
+              f_LogLEnergyQL->SetParameter("chargeRes", 0.); // assume 0 for now
+              f_LogLEnergyQL->SetParameter("peRes",     0.); // assume 0 for now
+              f_LogLEnergyQL->SetParameter("L",L_shower);
+              f_LogLEnergyQL->SetParameter("Q_ion",Q_shower);
               energyQL_LogL   = f_LogLEnergyQL->GetMinimumX( E_ll, E_ul, 0.01,100,false);
               // Check for cases where minimization failed (ie, the most likely
               // energy is very close to the Emin/Emax bounds)
@@ -1516,10 +1514,16 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
                 energyQL_LogL = -9;
                 hEnergyQL_LogL_Fail[type]    ->Fill( energyQL );
               }
+            } else {
+              energyQL_LogL = energyQL;
             }
-          } else {
-            energyQL_LogL = energyQL;
+
           }
+            
+            float trueE_dep   = fTrue_ElShowerEnergyDep;
+            float trueE       = trueE_dep; if( fUseTrueEnergy ) trueE = fTrue_ElEnergy;
+            float trueL_shower = fTrue_ElShowerPhotons;
+            float trueQ_shower = fTrue_ElShowerCharge;
 
           //if( energyQL_LogL_2R < E_ll + 3*dE || energyQL_LogL_2R > E_ul - 3*dE ) energyQL_LogL_2R = -9.;
           
@@ -1582,8 +1586,10 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
               
               hEvsRes_E_Q         ->Fill( trueE, (energyQ-trueE)/trueE );
               hEvsRes_E_Q_2R      ->Fill( trueE, (energyQ_2R-trueE)/trueE );
-              hEvsRes_E_QL        ->Fill( trueE, (energyQL-trueE)/trueE );
-              hEvsRes_E_QL_LogL   ->Fill( trueE, (energyQL_LogL-trueE)/trueE );
+              if( energyQL > 0 ) 
+                hEvsRes_E_QL        ->Fill( trueE, (energyQL-trueE)/trueE );
+              if( energyQL_LogL > 0 ) 
+                hEvsRes_E_QL_LogL   ->Fill( trueE, (energyQL_LogL-trueE)/trueE );
            
               hEvs_Qtrue          ->Fill( trueE, trueQ_shower ); 
               if( Q_shower > 0 ) hEvs_Q              ->Fill( trueE, Q_shower );
@@ -2067,7 +2073,8 @@ void EnergyPlots(bool doResolutionSlices = false){
 
 //  gStyle              ->SetTitleFont(62,"t");
   
-  
+  // Start program timer
+  std::time_t startTime = time(0);
   
 
   std::cout
@@ -2133,15 +2140,14 @@ void EnergyPlots(bool doResolutionSlices = false){
   hQ[1] ->SetFillColor(kBlue-10); //(kBlue-10);
   hQ[1] ->SetLineWidth(0);
   hQ[1]->SetStats(0);
-  hQ[1] ->GetXaxis()->SetTitleSize(axisTitleSize);
-  hQ[1] ->GetYaxis()->SetTitleSize(axisTitleSize);
+  FormatAxes( hQ[1], axisTitleSize, axisLabelSize, 1.0, 1.5); 
   hQ[1] ->SetMaximum( std::max(mcMax,dataMax)*1.2 );
   hQ[1] ->DrawCopy("hist");
   hQ[0] ->SetMarkerStyle(20);
   hQ[0] ->SetMarkerSize(0.7);
   hQ[0] ->SetLineColor(kBlack); //(kBlue+2);
   hQ[0] ->SetMarkerColor(kBlack); //(kBlue+2);
-  hQ[0] ->GetYaxis()->SetTitleOffset(1.4);
+  //hQ[0] ->GetYaxis()->SetTitleOffset(1.5);
   hQ[0] ->DrawCopy("same P E X0");
   hQ[1] ->DrawCopy("sameaxis"); // redraw axis
   
@@ -2182,15 +2188,14 @@ void EnergyPlots(bool doResolutionSlices = false){
   hL[1] ->SetFillColor(kOrange-9); //(kRed-10);
   hL[1] ->SetLineWidth(0);
   hL[1]->SetStats(0);
-  hL[1] ->GetXaxis()->SetTitleSize(axisTitleSize);
-  hL[1] ->GetYaxis()->SetTitleSize(axisTitleSize);
+  FormatAxes( hL[1], axisTitleSize, axisLabelSize, 1.0, 1.5); 
   hL[1] ->SetMaximum( std::max(mcMax,dataMax)*1.2 );
   hL[1] ->DrawCopy("hist");
   hL[0] ->SetMarkerStyle(20);
   hL[0] ->SetMarkerSize(0.7);
   hL[0] ->SetLineColor(kBlack); //(kOrange+2);
   hL[0] ->SetMarkerColor(kBlack); //(kOrange+2);
-  hL[0] ->GetYaxis()->SetTitleOffset(1.4);
+  //hL[0] ->GetYaxis()->SetTitleOffset(1.4);
   hL[0] ->DrawCopy("same P E X0");
   hL[1] ->DrawCopy("sameaxis"); // redraw axis
   
@@ -2824,7 +2829,7 @@ void EnergyPlots(bool doResolutionSlices = false){
       false, "EQ_Trk", "Q-only Trk Energy",3,3,-1.2,1.2,
       0, 0.33, false,
       //1, 20, false,
-      -9, -9,
+      0, 47.5,
       gr_sigma_Q_Trk,
       gr_rms_Q_Trk);
     
@@ -2899,7 +2904,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     TCanvas* cEvsRes  = new TCanvas("EvsRes_michel","EvsRes_michel",600,600);
     gPad->SetMargin(mar_l, mar_r, mar_b, mar_t);
     gPad->SetGrid();
-    gStyle->SetGridColor(kGray+1);
+    gStyle->SetGridColor(kGray);
 
 
     gStyle->SetErrorX(0);
@@ -2917,9 +2922,9 @@ void EnergyPlots(bool doResolutionSlices = false){
     mg->GetXaxis()->SetTitleOffset(1.1);
     mg->GetYaxis()->SetTitleSize(axisTitleSize);
     mg->GetYaxis()->SetTitleOffset(1.3);
-    mg->GetYaxis()->SetRangeUser(3,100);
+    mg->GetYaxis()->SetRangeUser(0,60);
     mg->GetXaxis()->SetRangeUser(0,60);
-    gPad->SetLogy(1);
+    //gPad->SetLogy(1);
 
     TLegend* legg = MakeLegend( 0.6, 1.-mar_t-0.02, textSize, 7,0.33); 
     legg  ->SetBorderSize(1);
@@ -2977,8 +2982,8 @@ void EnergyPlots(bool doResolutionSlices = false){
     std::cout
     <<"\n###############################################################\n"
     <<"Resolution slices: bare electrons, nominal\n";
-   
-    fMaxMCEvents=-500000;
+  
+    if( fMaxMCEvents_BareElShowers > 0 ) fMaxMCEvents = fMaxMCEvents_BareElShowers; 
 
     // Make E_vs_Q and L 2D histograms more finely binned along Y:
     //int E_bins = 50;
@@ -3159,25 +3164,6 @@ void EnergyPlots(bool doResolutionSlices = false){
     float LY_nom = hTrue_LY->GetMean();
     std::cout<<"Mean LY for bare electron shower MC: "<<LY_nom<<"\n";
     
-    /*
-    // Michel Trk
-    ResolutionSliceLoop(
-      hEvsRes_E_Trk, Emin, Emax, 9, 1.,
-      false, "EQ_Trk", "Q-only Trk Energy",3,3,-1.2,1.2,
-      1, fitRangeFac, false,
-      gr_sigma_Q_Trk,
-      gr_rms_Q_Trk);
-    
-    // Michel shower E_Q
-    ResolutionSliceLoop(
-      hEvsRes_E_Q, Emin, Emax, 9, 1.,
-      true, "EQ", "Q-only Energy",3,3,-1.2,1.2,
-      //1,-1, useHybridRes,
-      0,0.33, useHybridRes,
-      gr_sigma_Q,
-      gr_rms_Q);
-    */
-      
       ResolutionSliceLoop(
         hEvs_Q, Emin, Emax, 10, 1.,
         false, "Q_e_nom", "Shower Q",3,3,0.,2500e3,
@@ -3277,8 +3263,6 @@ void EnergyPlots(bool doResolutionSlices = false){
     fSmearTruePE = true;
     fSmearMode = 1;    
   
-    //fMaxMCEvents = 100000;
-     
     // Now do all hypothetical scenarios 
     for(size_t i_sn = 0; i_sn < 3; i_sn++) { 
 
@@ -3849,21 +3833,20 @@ void EnergyPlots(bool doResolutionSlices = false){
     mg_shwr->Draw("a");
     mg_shwr->GetXaxis()->SetTitle("True electron energy [MeV]");
     mg_shwr->GetYaxis()->SetTitle("Shower energy resolution [%]");
-    mg_shwr->GetYaxis()->SetRangeUser(0,15);
     FormatAxes(mg_shwr, axisTitleSize, axisLabelSize,1.1,1.3); 
-    mg_shwr->GetYaxis()->SetRangeUser(1,30);
-    gPad->SetLogy();
+    mg_shwr->GetYaxis()->SetRangeUser(1,10);
+    //gPad->SetLogy();
       
     
     TLegend* lg_shwr = MakeLegend( 0.60, 1.-mar_t-0.02, textSize, 4, 0.32 ); 
     lg_shwr  ->SetBorderSize(1);
     lg_shwr  ->SetFillStyle(1001);
     lg_shwr ->SetNColumns(2);
-    lg_shwr  ->AddEntry(grEl_sig_Q_nom, "Q-only #sigma","P");
+    lg_shwr  ->AddEntry(grEl_sig_Q_nom, "Q-only","P");
     lg_shwr  ->AddEntry(fResFitQ,          "Fit",          "L" );
-    lg_shwr  ->AddEntry(grEl_sig_QL_nom, "Q+L #sigma","P");
+    lg_shwr  ->AddEntry(grEl_sig_QL_nom, "Q+L","P");
     lg_shwr  ->AddEntry(fResFitQL,          "Fit",          "L" );
-    lg_shwr  ->AddEntry(grEl_sig_QL_LogL_nom, "Q+L (Log-L) #sigma","P");
+    lg_shwr  ->AddEntry(grEl_sig_QL_LogL_nom, "Q+L (likelihood)","P");
     lg_shwr  ->AddEntry(fResFitQL_LogL,          "Fit",          "L" );
   //  lg_shwr  ->AddEntry(grEl_rms_Q_nom, "Q-only RMS","PL");
   //  lg_shwr  ->AddEntry((TObject*)0, "","");
@@ -3880,8 +3863,19 @@ void EnergyPlots(bool doResolutionSlices = false){
 
   
   
-    
-    
+   
+   
+    // ----------------------------------------------------
+    // C2)  Compare baseline DUNE to 10 and 20 pe/MeV with all
+    //      three methods
+//    TCanvas*
+   
+    // Next to do:
+    // - add a 100 pe/MeV scenario
+    // - make plot of % improvement over Q-only as function of energy
+    //    * 3 curves for different LY (S/N = 10)
+   
+     
     
     
     
@@ -4008,30 +4002,28 @@ void EnergyPlots(bool doResolutionSlices = false){
       CopyTGraphFormat( (*grQL_LogL), (*grQL_LogL_rms), true);
      
       float textSizeLeg = 0.03;
-      float heightLeg = 3.5;
+      float heightLeg = 3;
       float marginTopLeg = 0.02;
       float heightFit = 3.;
       float sepFit = 0.01;
-      float fitX = legend_x1 + 0.1;
+      float fitX = legend_x1 + 0.05;
       
       // Plot fit curves
       cEvsRes_array->cd(i+1);
       gPad->SetMargin(mar_l, mar_r, mar_b, mar_t);
       gStyle->SetErrorX(0);
       gStyle->SetOptFit(0);
-//      gPad->SetGrid();
-//      gStyle->SetGridColor(kGray);
 
       mg_array[i] = new TMultiGraph();
       mg_array[i]->Add((*grQ), "AP");
-      mg_array[i]->Add((*grQL),"AP");
+      //mg_array[i]->Add((*grQL),"AP");
       mg_array[i]->Add((*grQL_LogL),"AP");
       mg_array[i]->Draw("a");
       mg_array[i]->GetXaxis()->SetTitle("True electron energy [MeV]");
       mg_array[i]->GetYaxis()->SetTitle("Shower energy resolution [%]");
-      //mg_array[i]->GetYaxis()->SetRangeUser(0.,20.);
-      mg_array[i]->GetYaxis()->SetRangeUser(1,80);
-      gPad->SetLogy();
+      mg_array[i]->GetYaxis()->SetRangeUser(0.,18.);
+      //mg_array[i]->GetYaxis()->SetRangeUser(1,80);
+      //gPad->SetLogy();
       FormatAxes(mg_array[i], axisTitleSize, axisLabelSize,1.1,1.3);  
       
       gPad->SetGrid();
@@ -4044,8 +4036,8 @@ void EnergyPlots(bool doResolutionSlices = false){
       hd_array[i] ->AddText("Isolated Electrons");
       hd_array[i]  ->AddText(Form("LY = %2.0f pe/MeV",lytarget[ly_index[i]]));
       hd_array[i]  ->AddText(Form("%s",sntag[sn_index[i]].c_str()));
-      hd_array[i]  ->SetFillStyle(1001);
-      hd_array[i] ->SetFillColor(kWhite);
+      //hd_array[i]  ->SetFillStyle(1001);
+      //hd_array[i] ->SetFillColor(kWhite);
 //      hd_array[i] ->SetBorderSize(1);
 //      hd_array[i]  ->SetFillColorAlpha(kWhite,0.60);
       hd_array[i] ->Draw();
@@ -4056,9 +4048,9 @@ void EnergyPlots(bool doResolutionSlices = false){
       lg_array[i]  ->SetNColumns(2);
       lg_array[i]  ->AddEntry((*grQ),  "Q-only",  "P");
       lg_array[i]  ->AddEntry(fResFitQ,            "Fit",              "L");
-      lg_array[i]  ->AddEntry((*grQL),  "Q+L",  "P");
-      lg_array[i]  ->AddEntry(fResFitQL,           "Fit",              "L");
-      lg_array[i]  ->AddEntry((*grQL_LogL),  "Q+L (Log-L)",  "P");
+      //lg_array[i]  ->AddEntry((*grQL),  "Q+L",  "P");
+      //lg_array[i]  ->AddEntry(fResFitQL,           "Fit",              "L");
+      lg_array[i]  ->AddEntry((*grQL_LogL),  "Q+L (likelihood)",  "P");
       lg_array[i]  ->AddEntry(fResFitQL_LogL,           "Fit",              "L");
       lg_array[i]  ->Draw("same");
       
@@ -4067,20 +4059,23 @@ void EnergyPlots(bool doResolutionSlices = false){
 
       hd_fit_q[i] =  MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01, textSizeLeg, heightFit, legend_width);
       hd_fit_q[i] -> AddText("Q-only fit:")->SetTextColor(kBlue);
-      hd_fit_q[i] -> AddText(Form("A = %4.1f #pm %4.1f %%", fResFitQ->GetParameter(0), fResFitQ->GetParError(0)))->SetTextColor(kBlue);
-      hd_fit_q[i] -> AddText(Form("B = %4.1f #pm %4.1f %%", fResFitQ->GetParameter(1), fResFitQ->GetParError(1)))->SetTextColor(kBlue);
+      hd_fit_q[i] -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQ->GetParameter(0), fResFitQ->GetParError(0)))->SetTextColor(kBlue);
+      hd_fit_q[i] -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQ->GetParameter(1), fResFitQ->GetParError(1)))->SetTextColor(kBlue);
       hd_fit_q[i] -> Draw();
-
+      
+      /*
       hd_fit_ql[i] = MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01-textSizeLeg*heightFit-sepFit, textSizeLeg, heightFit, legend_width);
       hd_fit_ql[i] -> AddText("Q+L fit:")->SetTextColor(kViolet+2);
-      hd_fit_ql[i] -> AddText(Form("A = %4.1f #pm %4.1f %%", fResFitQL->GetParameter(0), fResFitQL->GetParError(0)))->SetTextColor(kViolet+2);
-      hd_fit_ql[i] -> AddText(Form("B = %4.1f #pm %4.1f %%", fResFitQL->GetParameter(1), fResFitQL->GetParError(1)))->SetTextColor(kViolet+2);
+      hd_fit_ql[i] -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQL->GetParameter(0), fResFitQL->GetParError(0)))->SetTextColor(kViolet+2);
+      hd_fit_ql[i] -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQL->GetParameter(1), fResFitQL->GetParError(1)))->SetTextColor(kViolet+2);
       hd_fit_ql[i] -> Draw();
-      
-      hd_fit_ql_logl[i] = MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01-2.*textSizeLeg*heightFit-2*sepFit, textSizeLeg, heightFit, legend_width);
+      */
+
+      //hd_fit_ql_logl[i] = MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01-2.*textSizeLeg*heightFit-2*sepFit, textSizeLeg, heightFit, legend_width);
+      hd_fit_ql_logl[i] = MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01-textSizeLeg*heightFit-sepFit, textSizeLeg, heightFit, legend_width);
       hd_fit_ql_logl[i] -> AddText("Q+L likelihood fit:")->SetTextColor(kGreen+2);
-      hd_fit_ql_logl[i] -> AddText(Form("A = %4.1f #pm %4.1f %%", fResFitQL_LogL->GetParameter(0), fResFitQL_LogL->GetParError(0)))->SetTextColor(kGreen+2);
-      hd_fit_ql_logl[i] -> AddText(Form("B = %4.1f #pm %4.1f %%", fResFitQL_LogL->GetParameter(1), fResFitQL_LogL->GetParError(1)))->SetTextColor(kGreen+2);
+      hd_fit_ql_logl[i] -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQL_LogL->GetParameter(0), fResFitQL_LogL->GetParError(0)))->SetTextColor(kGreen+2);
+      hd_fit_ql_logl[i] -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQL_LogL->GetParameter(1), fResFitQL_LogL->GetParError(1)))->SetTextColor(kGreen+2);
       hd_fit_ql_logl[i] -> Draw();
       
       
@@ -4092,14 +4087,14 @@ void EnergyPlots(bool doResolutionSlices = false){
 
       mg_array_rms[i] = new TMultiGraph();
       mg_array_rms[i]->Add((*grQ_rms), "AP");
-      mg_array_rms[i]->Add((*grQL_rms),"AP");
+      //mg_array_rms[i]->Add((*grQL_rms),"AP");
       mg_array_rms[i]->Add((*grQL_LogL_rms),"AP");
       mg_array_rms[i]->Draw("a");
       mg_array_rms[i]->GetXaxis()->SetTitle("True electron energy [MeV]");
       mg_array_rms[i]->GetYaxis()->SetTitle("Shower energy RMS resolution [%]");
-      //mg_array_rms[i]->GetYaxis()->SetRangeUser(0.,20.);
-      mg_array_rms[i]->GetYaxis()->SetRangeUser(1,80);
-      gPad->SetLogy();
+      mg_array_rms[i]->GetYaxis()->SetRangeUser(0.,18.);
+      //mg_array_rms[i]->GetYaxis()->SetRangeUser(1,80);
+      //gPad->SetLogy();
       FormatAxes(mg_array_rms[i], axisTitleSize, axisLabelSize,1.1,1.3);  
       
       gPad->SetGrid();
@@ -4112,8 +4107,8 @@ void EnergyPlots(bool doResolutionSlices = false){
       hd_array_rms[i] ->AddText("Isolated Electrons");
       hd_array_rms[i]  ->AddText(Form("LY = %2.0f pe/MeV",lytarget[ly_index[i]]));
       hd_array_rms[i]  ->AddText(Form("%s",sntag[sn_index[i]].c_str()));
-      hd_array_rms[i]  ->SetFillStyle(1001);
-      hd_array_rms[i] ->SetFillColor(kWhite);
+//      hd_array_rms[i]  ->SetFillStyle(1001);
+//      hd_array_rms[i] ->SetFillColor(kWhite);
 //      hd_array_rms[i] ->SetBorderSize(1);
 //      hd_array_rms[i]  ->SetFillColorAlpha(kWhite,0.60);
       hd_array_rms[i] ->Draw();
@@ -4124,9 +4119,9 @@ void EnergyPlots(bool doResolutionSlices = false){
       lg_array_rms[i]  ->SetNColumns(2);
       lg_array_rms[i]  ->AddEntry((*grQ_rms),  "Q-only",  "P");
       lg_array_rms[i]  ->AddEntry(fResFitQ,            "Fit",              "L");
-      lg_array_rms[i]  ->AddEntry((*grQL_rms),  "Q+L",  "P");
-      lg_array_rms[i]  ->AddEntry(fResFitQL,           "Fit",              "L");
-      lg_array_rms[i]  ->AddEntry((*grQL_LogL_rms),  "Q+L (Log-L)",  "P");
+      //lg_array_rms[i]  ->AddEntry((*grQL_rms),  "Q+L",  "P");
+      //lg_array_rms[i]  ->AddEntry(fResFitQL,           "Fit",              "L");
+      lg_array_rms[i]  ->AddEntry((*grQL_LogL_rms),  "Q+L (likelihood)",  "P");
       lg_array_rms[i]  ->AddEntry(fResFitQL_LogL,           "Fit",              "L");
       lg_array_rms[i]  ->Draw("same");
       
@@ -4136,20 +4131,23 @@ void EnergyPlots(bool doResolutionSlices = false){
 
       hd_fit_q_rms[i] =  MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01, textSizeLeg, heightFit, legend_width);
       hd_fit_q_rms[i] -> AddText("Q-only fit:")->SetTextColor(kBlue);
-      hd_fit_q_rms[i] -> AddText(Form("A = %4.1f #pm %4.1f %%", fResFitQ->GetParameter(0), fResFitQ->GetParError(0)))->SetTextColor(kBlue);
-      hd_fit_q_rms[i] -> AddText(Form("B = %4.1f #pm %4.1f %%", fResFitQ->GetParameter(1), fResFitQ->GetParError(1)))->SetTextColor(kBlue);
+      hd_fit_q_rms[i] -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQ->GetParameter(0), fResFitQ->GetParError(0)))->SetTextColor(kBlue);
+      hd_fit_q_rms[i] -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQ->GetParameter(1), fResFitQ->GetParError(1)))->SetTextColor(kBlue);
       hd_fit_q_rms[i] -> Draw();
 
+      /*
       hd_fit_ql_rms[i] = MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01-textSizeLeg*heightFit-sepFit, textSizeLeg, heightFit, legend_width);
       hd_fit_ql_rms[i] -> AddText("Q+L fit:")->SetTextColor(kViolet+2);
-      hd_fit_ql_rms[i] -> AddText(Form("A = %4.1f #pm %4.1f %%", fResFitQL->GetParameter(0), fResFitQL->GetParError(0)))->SetTextColor(kViolet+2);
-      hd_fit_ql_rms[i] -> AddText(Form("B = %4.1f #pm %4.1f %%", fResFitQL->GetParameter(1), fResFitQL->GetParError(1)))->SetTextColor(kViolet+2);
+      hd_fit_ql_rms[i] -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQL->GetParameter(0), fResFitQL->GetParError(0)))->SetTextColor(kViolet+2);
+      hd_fit_ql_rms[i] -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQL->GetParameter(1), fResFitQL->GetParError(1)))->SetTextColor(kViolet+2);
       hd_fit_ql_rms[i] -> Draw();
-      
-      hd_fit_ql_logl_rms[i] = MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01-2.*textSizeLeg*heightFit-2*sepFit, textSizeLeg, heightFit, legend_width);
+      */
+
+//      hd_fit_ql_logl_rms[i] = MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01-2.*textSizeLeg*heightFit-2*sepFit, textSizeLeg, heightFit, legend_width);
+      hd_fit_ql_logl_rms[i] = MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01-textSizeLeg*heightFit-sepFit, textSizeLeg, heightFit, legend_width);
       hd_fit_ql_logl_rms[i] -> AddText("Q+L likelihood fit:")->SetTextColor(kGreen+2);
-      hd_fit_ql_logl_rms[i] -> AddText(Form("A = %4.1f #pm %4.1f %%", fResFitQL_LogL->GetParameter(0), fResFitQL_LogL->GetParError(0)))->SetTextColor(kGreen+2);
-      hd_fit_ql_logl_rms[i] -> AddText(Form("B = %4.1f #pm %4.1f %%", fResFitQL_LogL->GetParameter(1), fResFitQL_LogL->GetParError(1)))->SetTextColor(kGreen+2);
+      hd_fit_ql_logl_rms[i] -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQL_LogL->GetParameter(0), fResFitQL_LogL->GetParError(0)))->SetTextColor(kGreen+2);
+      hd_fit_ql_logl_rms[i] -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQL_LogL->GetParameter(1), fResFitQL_LogL->GetParError(1)))->SetTextColor(kGreen+2);
       hd_fit_ql_logl_rms[i] -> Draw();
 
     }
@@ -4174,6 +4172,23 @@ void EnergyPlots(bool doResolutionSlices = false){
   fSmearTruePE=false;
 
   outFile->Close();
+
+  double duration = (time(0) - startTime)/60.;
+  
+  /*
+  std::cout
+  <<"\n\n\n"
+  <<"==================================================\n"
+  <<"Done with making calorimetry plots\n"
+  <<"Total time: "<<duration<<" minutes\n"
+  <<"==================================================\n";
+  */
+
+  printf("\n\n\n");
+  printf("======================================\n");
+  printf("Done with making calorimetry plots\n");
+  printf("Total time: %6.2f minutes\n",(time(0)-startTime)/60.);
+  printf("======================================\n");
    
 }
 
@@ -5998,6 +6013,7 @@ void MakeResRangeGraphs(TH2D* h2d, TGraphErrors* gr ) {
       float dEdxHyp_err = 0.5*fabs(MuMPV_from_rr(ra) - MuMPV_from_rr(rb));
       std::cout<<"    dEdxHyp "<<dEdxHyp<<"   err: "<<dEdxHyp_err<<"\n";
         
+//      h[index] = h2d->ProjectionY( "h", i-binwin, i+binwin ); 
       h[index] = Make1DSlice( h2d, i-binwin, i+binwin );
       mean = h[index]->GetMean();
       rms = h[index]->GetRMS();
@@ -7321,6 +7337,7 @@ void MakeSlices( const TH2D* h2,
     // the range, then pack things up.
     if( inBinGroup && !flag ) {
       
+      //h_tmp     = h2->ProjectionY( name.c_str(), startbin, i-1 ); 
       h_tmp     = Make1DSlice( h2, startbin, i-1, name.c_str() );
       vec_h1    .push_back( h_tmp );
       vec_x     .push_back( xsum / (i-startbin) );
@@ -7488,7 +7505,8 @@ void ResolutionSliceLoop(
       gr      ->SetPointError (gr->GetN()-1,  Eerr, Eerr, sig_err_l, sig_err_u);
       gr_rms  ->SetPoint      (gr_rms->GetN(),E, sigRMS);
       gr_rms  ->SetPointError (gr_rms->GetN()-1, Eerr, Eerr, 0., 0.);
-      
+     
+      std::cout<<"  saving function\n"; 
       // save the fit function   
       fvFunc.push_back(f2g);
     }
@@ -7496,6 +7514,7 @@ void ResolutionSliceLoop(
   
     // plot it in the array
     if( makeFitArray && i < nx*ny ) {
+      std::cout<<"  Preparing to plot\n";
       float x1 = h_tmp->GetXaxis()->GetXmin();
       float x2 = h_tmp->GetXaxis()->GetXmax();
       if( xmin != xmax && xmax > xmin ) {
@@ -7526,6 +7545,11 @@ void ResolutionSliceLoop(
  }// done looping through all slices 
   
   cdefault->cd();
+
+  if( fSavePlots && makeFitArray ) {
+    outFile->cd();
+    cArray->Write();
+  }
 
 }
 
@@ -7633,6 +7657,11 @@ void ParamDistOverlay(
   
   
  }// done looping through all slices 
+  
+  if( fSavePlots ) {
+  outFile->cd();
+  cArray->Write();
+  }
 
 }
 

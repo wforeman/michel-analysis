@@ -220,7 +220,6 @@ float TauConversion(float);
 bool fApplyCalibCorr;
 
 int fCh;
-int fMaxMCEvents;
 int fRunMode;
 int fMinRun;
 int fMaxRun;
