@@ -36,9 +36,9 @@ float fBirksModelA    = 0.80;      // ICARUS
 float fBirksModelk    = 0.0486;    // ICARUS
 //##########################################################################
 
-float fRecomb = 0.65; 
+float fRecomb = 0.69; 
 float fRecombPh = 0.59;
-float fRecombIon = 0.67; // 0.69 from Mod Box
+float fRecombIon = 0.69; // 0.69 from Mod Box
 
 TFile* fFile;
 TFile* fFileMC;

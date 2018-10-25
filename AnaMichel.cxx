@@ -2,7 +2,7 @@
 
 bool fRepMCflag = false;
 bool fDoLikelihoodFit = true;
-bool fDoBareElectrons = false;
+bool fDoBareElectrons = true;
 
 float fChargeRes;
 float fPhelRes;
@@ -4019,8 +4019,8 @@ void EnergyPlots(bool doResolutionSlices = false){
       gPad->SetMargin(mar_l, mar_r, mar_b, mar_t);
       gStyle->SetErrorX(0);
       gStyle->SetOptFit(0);
-      gPad->SetGrid();
-      gStyle->SetGridColor(kGray);
+//      gPad->SetGrid();
+//      gStyle->SetGridColor(kGray);
 
       mg_array[i] = new TMultiGraph();
       mg_array[i]->Add((*grQ), "AP");
@@ -4033,6 +4033,11 @@ void EnergyPlots(bool doResolutionSlices = false){
       mg_array[i]->GetYaxis()->SetRangeUser(1,80);
       gPad->SetLogy();
       FormatAxes(mg_array[i], axisTitleSize, axisLabelSize,1.1,1.3);  
+      
+      gPad->SetGrid();
+      gStyle->SetGridColor(kGray);
+      gPad->Update();
+      gPad->RedrawAxis();
       
       hd_array[i] = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 4.5, 0.35);
       hd_array[i] ->AddText("#bf{LArIAT MC}");
@@ -4084,8 +4089,6 @@ void EnergyPlots(bool doResolutionSlices = false){
       gPad->SetMargin(mar_l, mar_r, mar_b, mar_t);
       gStyle->SetErrorX(0);
       gStyle->SetOptFit(0);
-      gPad->SetGrid();
-      gStyle->SetGridColor(kGray);
 
       mg_array_rms[i] = new TMultiGraph();
       mg_array_rms[i]->Add((*grQ_rms), "AP");
@@ -4098,6 +4101,11 @@ void EnergyPlots(bool doResolutionSlices = false){
       mg_array_rms[i]->GetYaxis()->SetRangeUser(1,80);
       gPad->SetLogy();
       FormatAxes(mg_array_rms[i], axisTitleSize, axisLabelSize,1.1,1.3);  
+      
+      gPad->SetGrid();
+      gStyle->SetGridColor(kGray);
+      gPad->Update();
+      gPad->RedrawAxis();
       
       hd_array_rms[i] = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 4.5, 0.35);
       hd_array_rms[i] ->AddText("#bf{LArIAT MC}");
@@ -4121,6 +4129,7 @@ void EnergyPlots(bool doResolutionSlices = false){
       lg_array_rms[i]  ->AddEntry((*grQL_LogL_rms),  "Q+L (Log-L)",  "P");
       lg_array_rms[i]  ->AddEntry(fResFitQL_LogL,           "Fit",              "L");
       lg_array_rms[i]  ->Draw("same");
+      
       
 
       // Make 3 Text Boxes for the fit info
@@ -4167,6 +4176,14 @@ void EnergyPlots(bool doResolutionSlices = false){
   outFile->Close();
    
 }
+
+
+
+
+
+
+
+
 
 
 
