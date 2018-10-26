@@ -5,7 +5,7 @@ bool fDoBareElectrons = true;
 bool fSavePlots = true;
 
 int fMaxMCEvents = -200000;
-int fMaxMCEvents_BareElShowers = 100000;
+int fMaxMCEvents_BareElShowers = -100000;
 
 float fChargeRes;
 float fPhelRes;
@@ -2437,7 +2437,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   std::cout
   <<"\n-----------------------------------------------\n"
   <<"Comparison to Log-Likelihood shower energy spectra...\n";
-  TCanvas* cEnergy2 = new TCanvas("energy2","energy2",900,300);
+  TCanvas* cEnergy2 = new TCanvas("energy2","energy2",1200,400);
   cEnergy2->Divide(3,1);
 
   // Some formatting changes
@@ -2631,7 +2631,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower L
     ResolutionSliceLoop(
       hEvs_L, Emin, Emax, 9, 1.,
-      false, "L", "Shower L",3,3,0.,2500e3,
+      true, "L", "Shower L",3,3,0.,2500e3,
       0,-0.10, false,
       -9, -9,
       gr_Lsig,
@@ -2836,7 +2836,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower E_Q
     ResolutionSliceLoop(
       hEvsRes_E_Q, Emin, Emax, 9, 1.,
-      false, "EQ", "Q-only Energy",3,3,-1.2,1.2,
+      true, "EQ", "Q-only Energy",3,3,-1.2,1.2,
       //1,-1, useHybridRes,
       0,0.33, useHybridRes,
       -9, -9,
@@ -2846,7 +2846,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower E_QL
     ResolutionSliceLoop(
       hEvsRes_E_QL, Emin, Emax, 9, 1.,
-      false, "EQL", "Q+L Energy",3,3,-1.2,1.2,
+      true, "EQL", "Q+L Energy",3,3,-1.2,1.2,
       //1,-1, useHybridRes,
       0,0.33, useHybridRes,
       -9, -9,
@@ -2856,7 +2856,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower E_QL log-likelihood
     ResolutionSliceLoop(
       hEvsRes_E_QL_LogL, Emin, Emax, 9, 1.,
-      false, "EQL_LogL", "Q+L Energy (likelihood)",3,3,-1.2,1.2,
+      true, "EQL_LogL", "Q+L Energy (likelihood)",3,3,-1.2,1.2,
       0,0.33, useHybridRes,
       -9, -9,
       gr_sigma_QL_LogL,
@@ -3094,13 +3094,13 @@ void EnergyPlots(bool doResolutionSlices = false){
     //    3rd layer: paramter values
     std::vector< std::vector < float >> vParams_Q_nom = 
     {
-      { -1.092e4, 2.776e4},
-      { 0.3484,   0.938,    0.01253}
+      { -1.08e4, 2.78e4},
+      { 0.353,   0.965,    0.0135}
     };
     std::vector< std::vector < float >> vParams_L_nom = 
     {
-      { -6166,    2.324e4},
-      { 0.5596, 0.7749, 0.01648}
+      { -6170,    2.32e4},
+      { 0.562, 0.781, 0.0173}
     };
     std::vector< std::vector< std::vector< float >>> vParams_Q = 
     { // SN = 7:1
@@ -3166,7 +3166,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     
       ResolutionSliceLoop(
         hEvs_Q, Emin, Emax, 10, 1.,
-        false, "Q_e_nom", "Shower Q",3,3,0.,2500e3,
+        true, "Q_e_nom", "Shower Q",3,3,0.,2500e3,
         0, -0.10, false,
         -9,-9,
         grEl_Qdist_sig_nom,
@@ -3174,7 +3174,7 @@ void EnergyPlots(bool doResolutionSlices = false){
         grEl_Qdist_mean_nom);
       ResolutionSliceLoop(
         hEvs_L, Emin, Emax, 10, 1.,
-        false, "L_e_nom", "Shower L",3,3,0.,2500e3,
+        true, "L_e_nom", "Shower L",3,3,0.,2500e3,
         0, -0.10, false,
         -9,-9,
         grEl_Ldist_sig_nom,
@@ -3186,7 +3186,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons trk nominal
     ResolutionSliceLoop(
       hEvsRes_E_Trk, Emin, Emax, 10, 1.,
-      false, "EQ_Trk_e_nom", "Q-only Energy (electron ion.)",3,3,-0.8,0.8,
+      true, "EQ_Trk_e_nom", "Q-only Energy (electron ion.)",3,3,-0.8,0.8,
       0, 0.20, useHybridRes,
         Emin, 42.5,
       grEl_sig_Q_Trk_nom,
@@ -3195,7 +3195,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons shower E_Q nominal
     ResolutionSliceLoop(
       hEvsRes_E_Q, Emin, Emax, 10, 1.,
-      false, "EQ_e_nom", "Q-only Energy",3,3,-0.8,0.8,
+      true, "EQ_e_nom", "Q-only Energy",3,3,-0.8,0.8,
       0, 0.20, useHybridRes,
         Emin, 42.5,
       grEl_sig_Q_nom,
@@ -3204,7 +3204,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons shower E_QL nominal
     ResolutionSliceLoop(
       hEvsRes_E_QL, Emin, Emax, 10, 1.,
-      false, "EQL_e_nom", "Q+L Energy",3,3,-0.8,0.8,
+      true, "EQL_e_nom", "Q+L Energy",3,3,-0.8,0.8,
       0, 0.20, useHybridRes,
         Emin, 42.5,
       grEl_sig_QL_nom,
@@ -3213,7 +3213,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons shower E_QL LogL nominal
     ResolutionSliceLoop(
       hEvsRes_E_QL_LogL, Emin, Emax, 10, 1.,
-      false, "EQL_LogL_e_nom", "Q+L Energy (Log-L)",3,3,-0.8,0.8,
+      true, "EQL_LogL_e_nom", "Q+L Energy (Log-L)",3,3,-0.8,0.8,
       0, 0.20, useHybridRes,
         Emin, 42.5,
       grEl_sig_QL_LogL_nom,
@@ -3325,7 +3325,7 @@ void EnergyPlots(bool doResolutionSlices = false){
          
           ResolutionSliceLoop(
             hEvsRes_E_Trk, Emin, Emax, 10, 1.,
-            true, Form("Trk_e_sn%lu_ly%lu",i_sn, i_ly), "Electron Track Energy",3,3,-1.2,1.2,
+            false, Form("Trk_e_sn%lu_ly%lu",i_sn, i_ly), "Electron Track Energy",3,3,-1.2,1.2,
             0, 0.33, false,
             Emin, 42.5,
             grEl_sig_Q_Trk_sn[i_sn],
@@ -4031,8 +4031,8 @@ void EnergyPlots(bool doResolutionSlices = false){
       gPad->Update();
       gPad->RedrawAxis();
       
-      hd_array[i] = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 4.5, 0.35);
-      hd_array[i] ->AddText("#bf{LArIAT MC}");
+      hd_array[i] = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 3.5, 0.35);
+//      hd_array[i] ->AddText("#bf{LArIAT MC}");
       hd_array[i] ->AddText("Isolated Electrons");
       hd_array[i]  ->AddText(Form("LY = %2.0f pe/MeV",lytarget[ly_index[i]]));
       hd_array[i]  ->AddText(Form("%s",sntag[sn_index[i]].c_str()));
@@ -4102,8 +4102,8 @@ void EnergyPlots(bool doResolutionSlices = false){
       gPad->Update();
       gPad->RedrawAxis();
       
-      hd_array_rms[i] = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 4.5, 0.35);
-      hd_array_rms[i] ->AddText("#bf{LArIAT MC}");
+      hd_array_rms[i] = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 3.5, 0.35);
+//      hd_array_rms[i] ->AddText("#bf{LArIAT MC}");
       hd_array_rms[i] ->AddText("Isolated Electrons");
       hd_array_rms[i]  ->AddText(Form("LY = %2.0f pe/MeV",lytarget[ly_index[i]]));
       hd_array_rms[i]  ->AddText(Form("%s",sntag[sn_index[i]].c_str()));
@@ -4151,6 +4151,23 @@ void EnergyPlots(bool doResolutionSlices = false){
       hd_fit_ql_logl_rms[i] -> Draw();
 
     }
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
 
 
   //////////////////////////////
@@ -7493,9 +7510,12 @@ void ResolutionSliceLoop(
       // between sigma and RMS
       sig     = 0.5*(sig + sigRMS);
       sig_err = std::sqrt( std::pow( sig_err,2 ) + std::pow( 0.5*std::fabs(sigRMS-sig),2 ) );
-
+      sig_err_l = sig_err;
+      sig_err_u = sig_err;      
+      
     } 
     
+
     // add points to all the TGraphs
     if( ( Emin_gr < 0 || E >= Emin_gr ) && ( Emax_gr < 0 || E <= Emax_gr )) {
       std::cout<<"  Setting point on sigma graph:   "<<sig<<" (+ "<<sig_err_u<<" - "<<sig_err_l<<")\n";
