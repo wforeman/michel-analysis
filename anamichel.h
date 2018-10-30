@@ -28,6 +28,7 @@ float kPi = TMath::Pi();
 float fLArDensity     = 1.370;  // [g/cm^3] (used in LArSoft (90.7K). ArgoNeuT used 1.383)
 float fExcRatio       = 0.21;
 float fTauT           = 1300.;  // triplet lifetime [ns]:w
+float fTauS           = 6.;  // triplet lifetime [ns]:w
 float fWph = 19.5e-6; // eV
 float fWion = 23.6e-6;
 float fBoxModelB      = 0.212;       // ArgoNeuT
@@ -1008,3 +1009,36 @@ void ScaleHistoDataMC(TH1D** h) {
   ScaleHistoDataMC(h[0],h[1]);
 }
 
+
+TGraphAsymmErrors* GetFracSig(TGraphAsymmErrors* g_sig, TGraphAsymmErrors* g_mean, std::string Ytitle="" ){
+ 
+  std::cout<<"GetFracSigma: "<<g_sig->GetN()<<" "<<g_mean->GetN()<<"\n";
+  
+  if( g_sig->GetN() != g_mean->GetN() ) {
+    std::cout<<"!!!!! Computing frac sig error: different number of points in TGraphs\n";
+  }
+
+  TGraphAsymmErrors* g_out = new TGraphAsymmErrors();
+
+  for(size_t ipt=0; ipt<g_sig->GetN(); ipt++){
+    double sig, E, dE, mean, sig_err, mean_err;
+    
+    g_sig  ->GetPoint(ipt,E,sig);
+    g_mean ->GetPoint(ipt,E,mean);
+    sig_err   = g_sig->GetErrorY(ipt);
+    mean_err  = g_mean->GetErrorY(ipt);
+    double rsig = sig / mean / 100.;
+    double rsig_err = rsig*std::sqrt( std::pow(sig_err/sig,2) + std::pow(mean_err/mean,2));
+    g_out ->SetPoint(       g_out->GetN(),    E,      rsig ); 
+    g_out ->SetPointError(  g_out->GetN()-1,  dE,dE,  rsig_err,rsig_err );
+    std::cout<<"   setting point "<<rsig<<" +/- "<<rsig_err<<"\n";
+  }
+  
+  CopyTGraphFormat(g_sig,g_out,true);
+  if( Ytitle != "" ) g_out ->GetYaxis()->SetTitle(Ytitle.c_str());
+  
+  std::cout<<"Resulting rsig TGraph has "<<g_out->GetN()<<" points\n";
+  
+  return g_out;
+
+}
