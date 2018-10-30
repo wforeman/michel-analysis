@@ -4,8 +4,10 @@ bool fDoLikelihoodFit = false;
 bool fDoBareElectrons = true;
 bool fSavePlots = true;
 
+float fChargeSignFilter = 0; // allow only electrons (-1), positrons (1)
+
 int fMaxMCEvents = -200000;
-int fMaxMCEvents_BareElShowers = 100000;
+int fMaxMCEvents_BareElShowers = -100000;
 
 float fChargeRes;
 float fPhelRes;
@@ -522,10 +524,11 @@ void Init(int mode) {
   funcP_Q_Gaus_fp[0]   = new TF1("funcP_Q_Gaus_muPeak","[0] + [1]*x",Emin,Emax);
     funcP_Q_Gaus_fp[0] ->SetParameter(0,-9136.); // +/- 2572
     funcP_Q_Gaus_fp[0] ->SetParameter(1,2.772e4); // +/- 83
-  funcP_Q_Gaus_fp[1]   = new TF1("funcP_Q_Gaus_rsigPeak","[0]/x^[1] + [2]",Emin,Emax);
-    funcP_Q_Gaus_fp[1] ->SetParameter(0,0.3488); // +/- 3.7
-    funcP_Q_Gaus_fp[1] ->SetParameter(1,0.9447); // +/- 0.367
-    funcP_Q_Gaus_fp[1] ->SetParameter(2,0.01283); // +/- 0.367
+  funcP_Q_Gaus_fp[1]    = new TF1("funcP_Q_Gaus_rsigPeak","[0]/x^[1] + [2]",Emin,Emax);
+    funcP_Q_Gaus_fp[1]  ->SetParameter(0,0.3488); // +/- 3.7
+    funcP_Q_Gaus_fp[1]  ->SetParameter(1,0.9447); // +/- 0.367
+    funcP_Q_Gaus_fp[1]  ->SetParameter(2,0.01283); // +/- 0.367
+    funcP_Q_Gaus_fp[1]  ->SetParLimits(2,0.,1.);
   fFuncP_Q_Gaus = new TF1("fFuncP_Q_Gaus",_funcP_Q_Gaus,-500e3,3000e3,2);
   fFuncP_Q_Gaus ->SetParName(0,"energy");
   fFuncP_Q_Gaus ->SetParName(1,"scale");
@@ -540,6 +543,7 @@ void Init(int mode) {
     funcP_L_Gaus_fp[1] ->SetParameter(0,0.3682); // +/- 3.7
     funcP_L_Gaus_fp[1] ->SetParameter(1,0.5246); // +/- 0.367
     funcP_L_Gaus_fp[1] ->SetParameter(2,-0.008254); // +/- 0.367
+    funcP_L_Gaus_fp[1]  ->SetParLimits(2,0.,1.);
   fFuncP_L_Gaus = new TF1("fFuncP_L_Gaus",_funcP_L_Gaus,-500e3,3000e3,2);
   fFuncP_L_Gaus ->SetParName(0,"energy");
   fFuncP_L_Gaus ->SetParName(1,"scale");
@@ -1043,6 +1047,8 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
     tree->GetEntry(i);
     
     if( !isMC && ((fMaxRun > 0 && fRunNumber > fMaxRun) || (fMinRun > 0 && fRunNumber < fMinRun ))) continue;
+
+    if( fChargeSignFilter != 0 && fTrue_ChargeSign != fChargeSignFilter ) continue;
 
     float fWgt = 1.0;
 //    if( isMC ) fWgt *= GetMCSpatialWgt( fTrue_MuTrackEnd_X, fTrue_MuTrackEnd_Y, fTrue_MuTrackEnd_Z );
@@ -3032,6 +3038,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // as the reference for resolution
     fUseTrueEnergy  = true;
     fRequireContainment = true;
+    fChargeSignFilter = -1;
     
     // Turn off extra smearing (which was due to the 
     // Michel topology)
@@ -3128,51 +3135,53 @@ void EnergyPlots(bool doResolutionSlices = false){
     std::vector< std::vector < float >> vParams_Q_nom = 
     {
       { -1.08e4, 2.78e4},
-      { 0.353,   0.965,    0.0135}
+      { 0.375,   1.000,   0.0143}
     };
     std::vector< std::vector < float >> vParams_L_nom = 
     {
       { -6170,    2.32e4},
-      { 0.562, 0.781, 0.0173}
+      { 0.550, 0.766, 0.0161 }
     };
+
+
     std::vector< std::vector< std::vector< float >>> vParams_Q = 
     { // SN = 7:1
       {
-        { -1.55e4, 2.63e4 },        // A
-        { 0.386,   0.7209, 0.0330 } // B
+        { -1.46e4, 2.62e4 },        // A
+        { 0.356,   0.687, 0.0318 } // B
       }, 
       // SN = 10:1
       {
-        { -1.422e4, 2.69e4 },        // A
-        { 0.427,   0.890, 0.0269 } // B
+        { -1.42e4, 2.69e4 },        // A
+        { 0.410,   0.869, 0.0262 } // B
       },
       // SN = 70:1
       {
-        { -1.093e4, 2.776e4 },        // A
-        { 0.348,   0.938,  0.01253 } // B
+        { -1.08e4, 2.78e4 },        // A
+        { 0.375,   1.000,  0.0143 } // B
       }
     };
 
     std::vector< std::vector< std::vector< float >>> vParams_L = 
     { // LY 0
       {
-        { -2.568e4, 2.591e4   },        // A
-        { 1.145,    0.6122,   -0.007684 } // B
+        { -2.26e4,  2.39e4   },        // A
+        { 1.11,    0.642,   0.00447 } // B
       }, 
       // LY 1
       {
-        { -1.007e4, 2.56e4  },        // A
-        { 0.5276,   0.6431, 0.00642 } // B
+        { -8430,    2.36e4  },        // A
+        { 0.523,   0.626, 0.00119 } // B
       },
       // LY 2
       {
-        { -9185,    2.55e4  },        // A
-        {  0.4485,  0.7032, 0.01114 } // B
+        { -7660,    2.35e4  },        // A
+        {  0.438,  0.694, 0.00880 } // B
       },
       // LY 3 (need to define)
       {
-        { -9185,    2.55e4  },        // A
-        {  0.4485,  0.7032, 0.01114 } // B
+        { -9600,    2.36e4  },        // A
+        {  0.253,  0.575, 0.0 } // B
       }
     };
 
@@ -3220,12 +3229,14 @@ void EnergyPlots(bool doResolutionSlices = false){
         grEl_Ldist_mean_nom);
    
     useHybridRes = true;
-    
+    float FitThresh = -0.20;
+
+
     // Isolated electrons trk nominal
     ResolutionSliceLoop(
       hEvsRes_E_Trk, Emin, Emax, 10, 1.,
       true, "EQ_Trk_e_nom", "Q-only Energy (electron ion.)",3,3,-0.8,0.8,
-      0, 0.20, useHybridRes,
+      0, 0.33, useHybridRes,
         Emin, 42.5,
       grEl_sig_Q_Trk_nom,
       grEl_rms_Q_Trk_nom);
@@ -3234,7 +3245,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     ResolutionSliceLoop(
       hEvsRes_E_Q, Emin, Emax, 10, 1.,
       true, "EQ_e_nom", "Q-only Energy",3,3,-0.8,0.8,
-      0, 0.20, useHybridRes,
+      0, FitThresh, useHybridRes,
         Emin, 42.5,
       grEl_sig_Q_nom,
       grEl_rms_Q_nom);
@@ -3243,7 +3254,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     ResolutionSliceLoop(
       hEvsRes_E_QL, Emin, Emax, 10, 1.,
       true, "EQL_e_nom", "Q+L Energy",3,3,-0.8,0.8,
-      0, 0.20, useHybridRes,
+      0, FitThresh, useHybridRes,
         Emin, 42.5,
       grEl_sig_QL_nom,
       grEl_rms_QL_nom);
@@ -3252,7 +3263,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     ResolutionSliceLoop(
       hEvsRes_E_QL_LogL, Emin, Emax, 10, 1.,
       true, "EQL_LogL_e_nom", "Q+L Energy (Log-L)",3,3,-0.8,0.8,
-      0, 0.20, useHybridRes,
+      0, FitThresh, useHybridRes,
         Emin, 42.5,
       grEl_sig_QL_LogL_nom,
       grEl_rms_QL_LogL_nom);
@@ -3399,7 +3410,7 @@ void EnergyPlots(bool doResolutionSlices = false){
         ResolutionSliceLoop(
           hEvsRes_E_Q, Emin, Emax,10,1., 
           true, Form("EQ_e_sn%lu_ly%lu",i_sn, i_ly), "Q-only Shower Energy",3,3,-0.8,0.8,
-          0, 0.20, useHybridRes,
+          0, FitThresh, useHybridRes,
             Emin, 42.5,
           grEl_sig_Q_sn_ly[i_sn][i_ly],
           grEl_rms_Q_sn_ly[i_sn][i_ly]);
@@ -3407,7 +3418,7 @@ void EnergyPlots(bool doResolutionSlices = false){
         ResolutionSliceLoop(
           hEvsRes_E_QL,Emin, Emax,10,1.,
           true, Form("EQL_e_sn%lu_ly%lu",i_sn, i_ly), "Q+L Shower Energy",3,3,-0.8,0.8,
-          0, 0.20, useHybridRes,
+          0, FitThresh, useHybridRes,
             Emin, 42.5,
           grEl_sig_QL_sn_ly[i_sn][i_ly],
           grEl_rms_QL_sn_ly[i_sn][i_ly]);
@@ -3415,7 +3426,7 @@ void EnergyPlots(bool doResolutionSlices = false){
         ResolutionSliceLoop(
           hEvsRes_E_QL_LogL,Emin, Emax,10,1.,
           true, Form("EQL_LogL_e_sn%lu_ly%lu",i_sn, i_ly), "Q+L Shower Energy",3,3,-0.8,0.8,
-          0, 0.20, useHybridRes,
+          0, FitThresh, useHybridRes,
             Emin, 42.5,
           grEl_sig_QL_LogL_sn_ly[i_sn][i_ly],
           grEl_rms_QL_LogL_sn_ly[i_sn][i_ly]);
@@ -3542,7 +3553,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     gStyle->SetOptFit(1111);
       
       float mar_l = 0.20;
-      float mar_b = 0.10;
+      float mar_b = 0.15;
 
       // Q
       c_el_params_nom->cd(1);
@@ -3953,7 +3964,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     TGraphAsymmErrors* g_fracimprov[N_ly];
     for(size_t i=0; i<N_ly; i++){
       g_fracimprov[i] = new TGraphAsymmErrors();
-      g_fracimprov[i] ->SetTitle(Form("LY = %4.0f pe/MeV",lytarget[i]));
+      g_fracimprov[i] ->SetTitle(Form("%4.0f pe/MeV",lytarget[i]));
       //g_fracimprov[i] ->GetXaxis()->SetTitle("Electron energy [MeV]");
       //g_fracimprov[i] ->GetYaxis()->SetTitle("Improvement in resolution [%]");
       for(size_t ipt=0; ipt<grEl_sig_Q_sn_ly[1][i]->GetN(); ipt++){
@@ -3977,8 +3988,20 @@ void EnergyPlots(bool doResolutionSlices = false){
     }
 
     // Formatting
-    //
+    g_fracimprov[0] -> SetMarkerStyle(3);
+    g_fracimprov[0] -> SetLineWidth(2);
+    g_fracimprov[0] -> SetMarkerColor(kBlack);
+    g_fracimprov[0] -> SetLineColor(kBlack);
+    CopyTGraphFormat( g_fracimprov[0], g_fracimprov[1]);
+    CopyTGraphFormat( g_fracimprov[0], g_fracimprov[2]);
+    CopyTGraphFormat( g_fracimprov[0], g_fracimprov[3]);
     
+    g_fracimprov[0] -> SetLineStyle(3);
+    g_fracimprov[1] -> SetLineStyle(4);
+    g_fracimprov[2] -> SetLineStyle(2);
+    g_fracimprov[3] -> SetLineStyle(1);
+   
+    gPad->SetMargin(0.15,0.05,0.15,0.05); 
     gPad->SetGrid();
     gStyle->SetGridColor(kGray);
 
@@ -4311,6 +4334,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   cEvsRes_shwr->Write();
   cEvsRes_array->Write();
   cEvsRMS_array->Write();
+  cFracImprove->Write();
   /////////////////////////////
 
   } // do isolated electron showers
@@ -7320,7 +7344,7 @@ void MultiGausFit(TH1D* h, TF1* f2g, TF1* fbg, int mode, float param){
     
     // Find where histogram drops below given threshold
     // of the peak height (for use in defining fit range)
-    size_t minBinsForFit = 20;
+    size_t minBinsForFit = 10;
     if( param >= 0 ) {
       minBinsForFit /= 2;
       for(size_t ii=max_bin+minBinsForFit; ii<h->GetXaxis()->GetNbins(); ii++){

@@ -604,7 +604,7 @@ float fMinBraggSlope;
 
 
   // Truth information
-  int                   fTrue_MuCharge;
+  int                   fTrue_ChargeSign;
   float                 fTrue_MuStopTime;
   TVector3              fTrue_MuTrackVertex;
   TVector3              fTrue_MuTrackEnd;
@@ -808,6 +808,7 @@ void setBranches(TTree *tree){
   tree   ->SetBranchAddress("NumPts3D",             &fNumPts3D);
   tree   ->SetBranchAddress("ElShowerVis",             &fElShowerVis);
   tree   ->SetBranchAddress("ElShowerVisCh",             &fElShowerVisCh);
+  tree   ->SetBranchAddress("True_ChargeSign",            &fTrue_ChargeSign);
   tree   ->SetBranchAddress("True_ElShowerVisCh",            &fTrue_ElShowerVisCh);
   tree   ->SetBranchAddress("True_PE_total",     &fTrue_PE_total);
   tree   ->SetBranchAddress("True_PE_prompt",     &fTrue_PE_prompt);
