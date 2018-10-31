@@ -7554,8 +7554,9 @@ void ResolutionSliceLoop(
       // The new error on this resolution will be a quadrature
       // sum of the original sigma error and half the difference
       // between sigma and RMS
+      float sig0    = sig;
       sig     = 0.5*(sig + sigRMS);
-      sig_err = std::sqrt( std::pow( sig_err,2 ) + std::pow( 0.5*std::fabs(sigRMS-sig),2 ) );
+      sig_err = std::sqrt( std::pow( sig_err,2 ) + std::pow( 0.5*(sigRMS-sig0), 2 ) );
       sig_err_l = sig_err;
       sig_err_u = sig_err;      
       
