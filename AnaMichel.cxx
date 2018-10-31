@@ -1,6 +1,6 @@
 #include "anamichel.h"
 
-bool fDoLikelihoodFit = false;
+bool fDoLikelihoodFit = true;
 bool fDoBareElectrons = true;
 bool fSavePlots = true;
 
@@ -4042,9 +4042,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     <<"****************************************************************\n"
     <<"Drawing big honkin' array of resolution scenarios\n";
     TCanvas* cEvsRes_array = new TCanvas("EvsRes_array","EvsRes_array",800,800);
-    TCanvas* cEvsRMS_array = new TCanvas("EvsRMS_array","EvsRMS_array",800,800);
     cEvsRes_array->Divide(3,3);
-    cEvsRMS_array->Divide(3,3);
    
     axisTitleSize = 0.05;
     axisLabelSize = 0.05;
@@ -4062,12 +4060,6 @@ void EnergyPlots(bool doResolutionSlices = false){
     TPaveText* hd_fit_q[9];
     TPaveText* hd_fit_ql[9];
     TPaveText* hd_fit_ql_logl[9];
-    TMultiGraph* mg_array_rms[9];
-    TPaveText* hd_array_rms[9];
-    TLegend* lg_array_rms[9]; 
-    TPaveText* hd_fit_q_rms[9];
-    TPaveText* hd_fit_ql_rms[9];
-    TPaveText* hd_fit_ql_logl_rms[9];
 
     for(size_t i=0; i<9; i++){
       
@@ -4085,9 +4077,6 @@ void EnergyPlots(bool doResolutionSlices = false){
       TGraphAsymmErrors** grQ         = &grEl_sig_Q_sn_ly[isn][ily];
       TGraphAsymmErrors** grQL        = &grEl_sig_QL_sn_ly[isn][ily];
       TGraphAsymmErrors** grQL_LogL   = &grEl_sig_QL_LogL_sn_ly[isn][ily];
-      TGraphAsymmErrors** grQ_rms     = &grEl_rms_Q_sn_ly[isn][ily];
-      TGraphAsymmErrors** grQL_rms    = &grEl_rms_QL_sn_ly[isn][ily];
-      TGraphAsymmErrors** grQL_LogL_rms = &grEl_rms_QL_LogL_sn_ly[isn][ily];
     
       // Initialize with guesses
       fResFitQ->SetParameter(0, 18.);
@@ -4123,37 +4112,10 @@ void EnergyPlots(bool doResolutionSlices = false){
       <<"     B = "<<fResFitQL_LogL->GetParameter(1)<<" +/- "<< fResFitQL_LogL->GetParError(1)<<"\n"
       <<"   ...................................................\n\n";
 
-      std::cout
-      <<"\n"
-      <<"   ..................................................\n"
-      <<"   Fits to resolution (using RMS)\n"
-      <<"   ...................................................\n";
-      (*grQ_rms)->Fit(fResFitQ);
-      std::cout
-      <<"   Q-only fit:\n"
-      <<"     Chi2/ndf = "<<fResFitQ->GetChisquare()/fResFitQ->GetNDF()<<"\n"
-      <<"     A = "<<fResFitQ->GetParameter(0)<<" +/- "<< fResFitQ->GetParError(0)<<"\n"
-      <<"     B = "<<fResFitQ->GetParameter(1)<<" +/- "<< fResFitQ->GetParError(1)<<"\n";
-      (*grQL_rms)->Fit(fResFitQL);
-      std::cout
-      <<"   Q+L fit:\n"
-      <<"     Chi2/ndf = "<<fResFitQL->GetChisquare()/fResFitQL->GetNDF()<<"\n"
-      <<"     A = "<<fResFitQL->GetParameter(0)<<" +/- "<< fResFitQL->GetParError(0)<<"\n"
-      <<"     B = "<<fResFitQL->GetParameter(1)<<" +/- "<< fResFitQL->GetParError(1)<<"\n";
-      (*grQL_LogL_rms)->Fit(fResFitQL_LogL);
-      std::cout
-      <<"   Q+L fit:\n"
-      <<"     Chi2/ndf = "<<fResFitQL_LogL->GetChisquare()/fResFitQL_LogL->GetNDF()<<"\n"
-      <<"     A = "<<fResFitQL_LogL->GetParameter(0)<<" +/- "<< fResFitQL_LogL->GetParError(0)<<"\n"
-      <<"     B = "<<fResFitQL_LogL->GetParameter(1)<<" +/- "<< fResFitQL_LogL->GetParError(1)<<"\n"
-      <<"   ...................................................\n\n";
       
       FormatTGraph((*grQ),        kBlue,      kBlue,      20, 1,  0.5, 2);
       FormatTGraph((*grQL),       kViolet+2,  kViolet+2,  21, 1,  0.5, 2);
       FormatTGraph((*grQL_LogL),  kGreen+2,   kGreen+2,   23, 1,  0.8, 2);
-      CopyTGraphFormat( (*grQ), (*grQ_rms), true);
-      CopyTGraphFormat( (*grQL), (*grQL_rms), true);
-      CopyTGraphFormat( (*grQL_LogL), (*grQL_LogL_rms), true);
      
       float textSizeLeg = 0.03;
       float heightLeg = 3;
@@ -4232,78 +4194,6 @@ void EnergyPlots(bool doResolutionSlices = false){
       hd_fit_ql_logl[i] -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQL_LogL->GetParameter(1), fResFitQL_LogL->GetParError(1)))->SetTextColor(kGreen+2);
       hd_fit_ql_logl[i] -> Draw();
       
-      
-      // Plot RMS curves
-      cEvsRMS_array->cd(i+1);
-      gPad->SetMargin(mar_l, mar_r, mar_b, mar_t);
-      gStyle->SetErrorX(0);
-      gStyle->SetOptFit(0);
-
-      mg_array_rms[i] = new TMultiGraph();
-      mg_array_rms[i]->Add((*grQ_rms), "AP");
-      //mg_array_rms[i]->Add((*grQL_rms),"AP");
-      mg_array_rms[i]->Add((*grQL_LogL_rms),"AP");
-      mg_array_rms[i]->Draw("a");
-      mg_array_rms[i]->GetXaxis()->SetTitle("True electron energy [MeV]");
-      mg_array_rms[i]->GetYaxis()->SetTitle("Shower energy RMS resolution [%]");
-      mg_array_rms[i]->GetYaxis()->SetRangeUser(0.,18.);
-      //mg_array_rms[i]->GetYaxis()->SetRangeUser(1,80);
-      //gPad->SetLogy();
-      FormatAxes(mg_array_rms[i], axisTitleSize, axisLabelSize,1.1,1.3);  
-      
-      gPad->SetGrid();
-      gStyle->SetGridColor(kGray);
-      gPad->Update();
-      gPad->RedrawAxis();
-      
-      hd_array_rms[i] = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 3.5, 0.35);
-//      hd_array_rms[i] ->AddText("#bf{LArIAT MC}");
-      hd_array_rms[i] ->AddText("Isolated Electrons");
-      hd_array_rms[i]  ->AddText(Form("LY = %2.0f pe/MeV",lytarget[ly_index[i]]));
-      hd_array_rms[i]  ->AddText(Form("%s",sntag[sn_index[i]].c_str()));
-//      hd_array_rms[i]  ->SetFillStyle(1001);
-//      hd_array_rms[i] ->SetFillColor(kWhite);
-//      hd_array_rms[i] ->SetBorderSize(1);
-//      hd_array_rms[i]  ->SetFillColorAlpha(kWhite,0.60);
-      hd_array_rms[i] ->Draw();
-
-      lg_array_rms[i] = MakeLegend( legend_x1, 1.-mar_t-marginTopLeg, textSizeLeg, heightLeg, legend_width); 
-      lg_array_rms[i]  ->SetBorderSize(1);
-      lg_array_rms[i]  ->SetFillStyle(1001);
-      lg_array_rms[i]  ->SetNColumns(2);
-      lg_array_rms[i]  ->AddEntry((*grQ_rms),  "Q-only",  "P");
-      lg_array_rms[i]  ->AddEntry(fResFitQ,            "Fit",              "L");
-      //lg_array_rms[i]  ->AddEntry((*grQL_rms),  "Q+L",  "P");
-      //lg_array_rms[i]  ->AddEntry(fResFitQL,           "Fit",              "L");
-      lg_array_rms[i]  ->AddEntry((*grQL_LogL_rms),  "Q+L (likelihood)",  "P");
-      lg_array_rms[i]  ->AddEntry(fResFitQL_LogL,           "Fit",              "L");
-      lg_array_rms[i]  ->Draw("same");
-      
-      
-
-      // Make 3 Text Boxes for the fit info
-
-      hd_fit_q_rms[i] =  MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01, textSizeLeg, heightFit, legend_width);
-      hd_fit_q_rms[i] -> AddText("Q-only fit:")->SetTextColor(kBlue);
-      hd_fit_q_rms[i] -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQ->GetParameter(0), fResFitQ->GetParError(0)))->SetTextColor(kBlue);
-      hd_fit_q_rms[i] -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQ->GetParameter(1), fResFitQ->GetParError(1)))->SetTextColor(kBlue);
-      hd_fit_q_rms[i] -> Draw();
-
-      /*
-      hd_fit_ql_rms[i] = MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01-textSizeLeg*heightFit-sepFit, textSizeLeg, heightFit, legend_width);
-      hd_fit_ql_rms[i] -> AddText("Q+L fit:")->SetTextColor(kViolet+2);
-      hd_fit_ql_rms[i] -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQL->GetParameter(0), fResFitQL->GetParError(0)))->SetTextColor(kViolet+2);
-      hd_fit_ql_rms[i] -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQL->GetParameter(1), fResFitQL->GetParError(1)))->SetTextColor(kViolet+2);
-      hd_fit_ql_rms[i] -> Draw();
-      */
-
-//      hd_fit_ql_logl_rms[i] = MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01-2.*textSizeLeg*heightFit-2*sepFit, textSizeLeg, heightFit, legend_width);
-      hd_fit_ql_logl_rms[i] = MakeTextBox(fitX, 1.-mar_t-marginTopLeg-textSizeLeg*heightLeg-0.01-textSizeLeg*heightFit-sepFit, textSizeLeg, heightFit, legend_width);
-      hd_fit_ql_logl_rms[i] -> AddText("Q+L likelihood fit:")->SetTextColor(kGreen+2);
-      hd_fit_ql_logl_rms[i] -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQL_LogL->GetParameter(0), fResFitQL_LogL->GetParError(0)))->SetTextColor(kGreen+2);
-      hd_fit_ql_logl_rms[i] -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQL_LogL->GetParameter(1), fResFitQL_LogL->GetParError(1)))->SetTextColor(kGreen+2);
-      hd_fit_ql_logl_rms[i] -> Draw();
-
     }
 
 
