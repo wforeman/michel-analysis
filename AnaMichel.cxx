@@ -1,8 +1,10 @@
 #include "anamichel.h"
 
-bool fDoLikelihoodFit = true;
+bool fDoLikelihoodFit = false;
 bool fDoBareElectrons = true;
-bool fSavePlots = true;
+bool fSavePlots       = true;
+
+bool fHybridRes_UseChisquareWeighting = true;
 
 float fChargeSignFilter = 0; // allow only electrons (-1), positrons (1)
 
@@ -252,7 +254,7 @@ void Init(int mode) {
     fTimeStart                = 1465344332; // unix time for Run 9447
     fTimeEnd                  = 1469462754+60; // unix time for Run 9980
     fMinRun                   = -9448;
-    fMaxRun                   = 9563; //9900;
+    fMaxRun                   = -9563; //9900;
     fGateDelay                = 350.;
     filenameData              = "files/MichelAna_run2b.root";
     filenameMC                = "files/MichelAna_mc2b.root";
@@ -477,23 +479,23 @@ void Init(int mode) {
     funcP_Q_fp[2] ->SetParameter(5,-1.221e-7); 
     */
   funcP_Q_fp[2]   = new TF1("funcP_Q_rBG","[0]+[1]*x+[2]*x^2+[3]*x^3",Emin,Emax);
-    funcP_Q_fp[2] ->SetParameter(0,-0.808); // +/- 0.08
-    funcP_Q_fp[2] ->SetParameter(1,0.118); 
-    funcP_Q_fp[2] ->SetParameter(2,-0.00267);
-    funcP_Q_fp[2] ->SetParameter(3,1.63e-5); 
+    funcP_Q_fp[2] ->SetParameter(0,-0.8); // +/- 0.08
+    funcP_Q_fp[2] ->SetParameter(1,0.12); 
+    funcP_Q_fp[2] ->SetParameter(2,-0.0026);
+    funcP_Q_fp[2] ->SetParameter(3,1.6e-5); 
   /*
   funcP_Q_fp[3]   = new TF1("funcP_Q_rmuBG","[0]/x^2 + [1]",Emin,Emax);
     funcP_Q_fp[3]  ->SetParameter(0,87.76); 
     funcP_Q_fp[3]  ->SetParameter(1,0.8073);
     */
   funcP_Q_fp[3]   = new TF1("funcP_Q_rmuBG","[0]/x^[1] + [2]",Emin,Emax);
-    funcP_Q_fp[3]  ->SetParameter(0,153.9); 
-    funcP_Q_fp[3]  ->SetParameter(1,2.213);
-    funcP_Q_fp[3]  ->SetParameter(2,0.822);
+    funcP_Q_fp[3]  ->SetParameter(0,150); 
+    funcP_Q_fp[3]  ->SetParameter(1,2.19);
+    funcP_Q_fp[3]  ->SetParameter(2,0.821);
   funcP_Q_fp[4]   = new TF1("funcP_Q_rsigBG","[0] + [1]*x + [2]*x^2",Emin,Emax);
-    funcP_Q_fp[4]  ->SetParameter(0,2.543); 
-    funcP_Q_fp[4]  ->SetParameter(1,0.01845); 
-    funcP_Q_fp[4]  ->SetParameter(2,0.001397); 
+    funcP_Q_fp[4]  ->SetParameter(0,2.54); 
+    funcP_Q_fp[4]  ->SetParameter(1,0.019); 
+    funcP_Q_fp[4]  ->SetParameter(2,0.0014); 
   fFuncP_Q = new TF1("fFuncP_Q",_funcP_Q,-500e3,2500e3,2);
   fFuncP_Q ->SetParName(0,"energy");
   fFuncP_Q ->SetParName(1,"scale");
@@ -510,9 +512,9 @@ void Init(int mode) {
   //  funcP_L_fp[1] ->SetParameter(0,0.9358); // +/- 3.7
   //  funcP_L_fp[1] ->SetParameter(1,0.05886); // +/- 0.367
   funcP_L_fp[1]   = new TF1("funcP_Q_rsigPeak","[0]/x^[1] + [2]",Emin,Emax);
-    funcP_L_fp[1] ->SetParameter(0,0.3507); // +/- 3.7
-    funcP_L_fp[1] ->SetParameter(1,0.4226); // +/- 0.367
-    funcP_L_fp[1] ->SetParameter(2,0.00802); // +/- 0.367
+    funcP_L_fp[1] ->SetParameter(0,0.351); // +/- 3.7
+    funcP_L_fp[1] ->SetParameter(1,0.43); // +/- 0.367
+    funcP_L_fp[1] ->SetParameter(2,0.008); // +/- 0.367
   fFuncP_L = new TF1("fFuncP_L",_funcP_L,-500e3,3000e3,2);
   fFuncP_L ->SetParName(0,"energy");
   fFuncP_L ->SetParName(1,"scale");
@@ -856,7 +858,7 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
   std::cout<<"Looping over data tree...\n";
   Loop(0);
   std::cout<<"Looping over MC tree...\n";
-  Loop(1);
+  //Loop(1);
   //EnergyPlots();
   
   //if( fApplyCalibCorr ) {
@@ -1112,9 +1114,11 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
 
           // TO DO: add quenching
           
-          std::binomial_distribution<int> distPrompt( fTrue_ElShowerPhotonsPrompt, fTrue_ElShowerVisCh[ch] );
+//          std::binomial_distribution<int> distPrompt( fTrue_ElShowerPhotonsPrompt, fTrue_ElShowerVisCh[ch] );
+//          std::binomial_distribution<int> distTotal( fTrue_ElShowerPhotons, fTrue_ElShowerVisCh[ch] );
+          std::binomial_distribution<int> distPrompt( fTrue_ElShowerPhotonsPromptQuenched, fTrue_ElShowerVisCh[ch] );
+          std::binomial_distribution<int> distTotal( fTrue_ElShowerPhotonsQuenched, fTrue_ElShowerVisCh[ch] );
           fTrue_PE_prompt[ch] = distPrompt(generator);
-          std::binomial_distribution<int> distTotal( fTrue_ElShowerPhotons, fTrue_ElShowerVisCh[ch] );
           fTrue_PE_total[ch] = distTotal(generator);
           
           fPE_prompt[ch] = fTrue_PE_prompt[ch];
@@ -2496,16 +2500,24 @@ void EnergyPlots(bool doResolutionSlices = false){
   hEnergyQ[1] ->DrawCopy("sameaxis"); // redraw axis
   hTrue_EnergyDep->DrawCopy("hist same");
 
-  TPaveText* b3_pt1 = MakeTextBox(0.5, 0.88, 0.05, 3);
+  /*
+  TPaveText* b3_pt1 = MakeTextBox(0.5, 0.88, textSize, 3);
   b3_pt1 ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQ[0],hEnergyQ[1])));
   b3_pt1 ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQ[0],hTrue_EnergyDep)));
   b3_pt1 ->Draw();
   
-  TLegend* b3_leg1  = MakeLegend(0.6, 0.88-4*0.05, 0.05, 3);
+  TLegend* b3_leg1  = MakeLegend(0.6, 0.88-4*textSize, textSize, 3);
   b3_leg1 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
   b3_leg1 ->AddEntry(hEnergyQ[1], "MC reco", "LF");
   b3_leg1 ->AddEntry(hEnergyQ[0], "Data", "LPE");
   b3_leg1 ->Draw();
+  */
+  TLegend* b3_leg1  = MakeLegend(0.6, 0.88, 0.045, 3);
+  b3_leg1 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
+  b3_leg1 ->AddEntry(hEnergyQ[1], "MC reco", "LF");
+  b3_leg1 ->AddEntry(hEnergyQ[0], "Data", "LPE");
+  b3_leg1 ->Draw();
+
  
   /* 
   // ------------------------------------------
@@ -2552,12 +2564,19 @@ void EnergyPlots(bool doResolutionSlices = false){
   hEnergyQL[1] ->DrawCopy("sameaxis"); // redraw axis
   hTrue_EnergyDep->DrawCopy("hist same");
 
-  TPaveText* b3_pt3 = MakeTextBox(0.5, 0.88, 0.05, 3);
+  /*
+  TPaveText* b3_pt3 = MakeTextBox(0.5, 0.88, textSize, 3);
   b3_pt3 ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQL[0],hEnergyQL[1])));
   b3_pt3 ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQL[0],hTrue_EnergyDep)));
   b3_pt3 ->Draw();
   
-  TLegend* b3_leg3  = MakeLegend(0.6, 0.88-4*0.05, 0.05, 3);
+  TLegend* b3_leg3  = MakeLegend(0.6, 0.88-4*textSize, textSize, 3);
+  b3_leg3 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
+  b3_leg3 ->AddEntry(hEnergyQL[1], "MC reco", "LF");
+  b3_leg3 ->AddEntry(hEnergyQL[0], "Data", "LPE");
+  b3_leg3 ->Draw();
+  */
+  TLegend* b3_leg3  = MakeLegend(0.6, 0.88, 0.045, 3);
   b3_leg3 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
   b3_leg3 ->AddEntry(hEnergyQL[1], "MC reco", "LF");
   b3_leg3 ->AddEntry(hEnergyQL[0], "Data", "LPE");
@@ -2577,17 +2596,24 @@ void EnergyPlots(bool doResolutionSlices = false){
   hEnergyQL_LogL[1] ->DrawCopy("sameaxis"); // redraw axis
   hTrue_EnergyDep   ->DrawCopy("hist same");
 
-  TPaveText* b3_pt2 = MakeTextBox(0.5, 0.88, 0.05, 3);
+  /*
+  TPaveText* b3_pt2 = MakeTextBox(0.5, 0.88, textSize, 3);
   b3_pt2 ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQL_LogL[0],hEnergyQL_LogL[1])));
   b3_pt2 ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQL_LogL[0],hTrue_EnergyDep)));
   b3_pt2 ->Draw();
   
-  TLegend* b3_leg2  = MakeLegend(0.6, 0.88-4*0.05, 0.05, 3);
+  TLegend* b3_leg2  = MakeLegend(0.6, 0.88-4*textSize, textSize, 3);
   b3_leg2 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
   b3_leg2 ->AddEntry(hEnergyQL_LogL[1], "MC reco", "LF");
   b3_leg2 ->AddEntry(hEnergyQL_LogL[0], "Data", "LPE");
   b3_leg2 ->Draw();
-  
+  */
+  TLegend* b3_leg2  = MakeLegend(0.6, 0.88, 0.045, 3);
+  b3_leg2 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
+  b3_leg2 ->AddEntry(hEnergyQL_LogL[1], "MC reco", "LF");
+  b3_leg2 ->AddEntry(hEnergyQL_LogL[0], "Data", "LPE");
+  b3_leg2 ->Draw();
+
 //  gStyle              ->SetTitleFont(42,"t");
   
   
@@ -3042,6 +3068,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     
     // Turn off extra smearing (which was due to the 
     // Michel topology)
+    /*
     float fSmearFactorDefaults[2];
     float fScaleFactorDefaults[2];
     fSmearFactorDefaults[0] = fSmearFactor[0];
@@ -3050,6 +3077,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     fScaleFactorDefaults[1] = fScaleFactor[1];
     fSmearFactor[0]=0.;
     fSmearFactor[1]=0.;
+    */
    
     // All possible graphs
     //   LY:
@@ -3134,54 +3162,54 @@ void EnergyPlots(bool doResolutionSlices = false){
     //    3rd layer: paramter values
     std::vector< std::vector < float >> vParams_Q_nom = 
     {
-      { -1.08e4, 2.78e4},
-      { 0.375,   1.000,   0.0143}
+      { -1.2e4, 2.77e4},
+      { 0.408,   1.107,   0.0174}
     };
     std::vector< std::vector < float >> vParams_L_nom = 
     {
-      { -6170,    2.32e4},
-      { 0.550, 0.766, 0.0161 }
+      { -1.2e4,    2.32e4},
+      { 0.511, 0.9205, 0.0516 }
     };
 
 
     std::vector< std::vector< std::vector< float >>> vParams_Q = 
     { // SN = 7:1
       {
-        { -1.46e4, 2.62e4 },        // A
-        { 0.356,   0.687, 0.0318 } // B
+        { -1.5e4, 2.62e4 },        // A
+        { 0.375,   0.683, 0.0282 } // B
       }, 
       // SN = 10:1
       {
         { -1.42e4, 2.69e4 },        // A
-        { 0.410,   0.869, 0.0262 } // B
+        { 0.448,   0.958, 0.0303 } // B
       },
       // SN = 70:1
       {
-        { -1.08e4, 2.78e4 },        // A
-        { 0.375,   1.000,  0.0143 } // B
+        { -1.2e4, 2.77e4 },        // A
+        { 0.408,   1.11,  0.0174 } // B
       }
     };
 
     std::vector< std::vector< std::vector< float >>> vParams_L = 
     { // LY 0
       {
-        { -2.26e4,  2.39e4   },        // A
-        { 1.11,    0.642,   0.00447 } // B
+        { -3.0e4,  2.39e4   },        // A
+        { 1.07,    0.621,   0.0 } // B
       }, 
       // LY 1
       {
-        { -8430,    2.36e4  },        // A
-        { 0.523,   0.626, 0.00119 } // B
+        { -1.5e4,   2.36e4  },        // A
+        { 0.456,   0.587, 0.0 } // B
       },
       // LY 2
       {
-        { -7660,    2.35e4  },        // A
-        {  0.438,  0.694, 0.00880 } // B
+        { -1.2e4,   2.34e4  },        // A
+        {  0.361,  0.652, 0.00698 } // B
       },
       // LY 3 (need to define)
       {
-        { -9600,    2.36e4  },        // A
-        {  0.253,  0.575, 0.0 } // B
+        { -1.3e4,    2.35e4  },        // A
+        {  0.286,  0.784, 0.0108 } // B
       }
     };
 
@@ -3304,15 +3332,22 @@ void EnergyPlots(bool doResolutionSlices = false){
       hEvs_L, 7.5, 52.5, 9, 1., 0., 2500e3,
       "overlays_e_L_nom", "Electron shower L", 3, 3, fFuncP_L);
     
-    
-    // Assume a light collection system
-    // capable of achieving 0.1 pe resolution
+    // Turn off the LArIAT smearing and assume smearing
+    // based on a light collection system capable of achieving
+    // 0.1pe resolution (like SiPMs) 
+    float fSmearFactorDefaults[2];
+    float fScaleFactorDefaults[2];
+    fSmearFactorDefaults[0] = fSmearFactor[0];
+    fSmearFactorDefaults[1] = fSmearFactor[1];
+    fScaleFactorDefaults[0] = fScaleFactor[0];
+    fScaleFactorDefaults[1] = fScaleFactor[1];
     fSmearFactor[0] = 0.1;
     fSmearFactor[1] = 0.1;
     fSmearTruePE    = true;
     fSmearMode      = 1;    
-    fCorrectQuenching = false;
-  
+    fCorrectQuenching = true; // false
+   
+   
     // Now do all hypothetical scenarios 
     for(size_t i_sn = 0; i_sn < N_sn; i_sn++) { 
 
@@ -3367,8 +3402,8 @@ void EnergyPlots(bool doResolutionSlices = false){
             funcP_L_Gaus_fp[i]->SetParameter(j,vParams_L[i_ly][i][j]);
         }
         
-        if( i_ly == 3 ) fDebugFlag = true;
-        else            fDebugFlag = false;
+        //if( i_ly == 3 ) fDebugFlag = true;
+        //else            fDebugFlag = false;
         
         // loop the tree
         Loop( tree, 1, true );
@@ -3552,18 +3587,15 @@ void EnergyPlots(bool doResolutionSlices = false){
     //gStyle->SetOptStat(1);
     gStyle->SetOptFit(1111);
       
-      float mar_l = 0.20;
-      float mar_b = 0.15;
-
       // Q
       c_el_params_nom->cd(1);
-      gPad->SetMargin(mar_l, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Qdist_mean_nom->Fit(funcP_Q_Gaus_fp[0]);
       grEl_Qdist_mean_nom->DrawClone("AP");
       c_el_params_nom->cd(2);
-      gPad->SetMargin(mar_l, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Qdist_rsig_nom->Fit(funcP_Q_Gaus_fp[1]);
@@ -3571,13 +3603,13 @@ void EnergyPlots(bool doResolutionSlices = false){
       
       // L
       c_el_params_nom->cd(3);
-      gPad->SetMargin(mar_l, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Ldist_mean_nom->Fit(funcP_L_Gaus_fp[0]);
       grEl_Ldist_mean_nom->DrawClone("AP");
       c_el_params_nom->cd(4);
-      gPad->SetMargin(mar_l, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Ldist_rsig_nom->Fit(funcP_L_Gaus_fp[1]);
@@ -3600,14 +3632,14 @@ void EnergyPlots(bool doResolutionSlices = false){
     
       // Case 1:
       c_el_paramsQ->cd(1);
-      gPad->SetMargin(mar_l, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Qdist_mean_sn[0]->Fit(funcP_Q_Gaus_fp[0]);
       grEl_Qdist_mean_sn[0]->DrawClone("AP");
     
       c_el_paramsQ->cd(2);
-      gPad->SetMargin(mar_l, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Qdist_rsig_sn[0]->Fit(funcP_Q_Gaus_fp[1]);
@@ -3615,14 +3647,14 @@ void EnergyPlots(bool doResolutionSlices = false){
     
       // Case 2:
       c_el_paramsQ->cd(3);
-      gPad->SetMargin(mar_l, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Qdist_mean_sn[1]->Fit(funcP_Q_Gaus_fp[0]);
       grEl_Qdist_mean_sn[1]->DrawClone("AP");
       
       c_el_paramsQ->cd(4);
-      gPad->SetMargin(mar_l, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Qdist_rsig_sn[1]->Fit(funcP_Q_Gaus_fp[1]);
@@ -3630,14 +3662,14 @@ void EnergyPlots(bool doResolutionSlices = false){
 
       // Case 3
       c_el_paramsQ->cd(5);
-      gPad->SetMargin(mar_l, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Qdist_mean_sn[2]->Fit(funcP_Q_Gaus_fp[0]);
       grEl_Qdist_mean_sn[2]->DrawClone("AP");
 
       c_el_paramsQ->cd(6);
-      gPad->SetMargin(mar_l, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Qdist_rsig_sn[2]->Fit(funcP_Q_Gaus_fp[1]);
@@ -3655,14 +3687,14 @@ void EnergyPlots(bool doResolutionSlices = false){
     
       // Case 1
       c_el_paramsL->cd(1);
-      gPad->SetMargin(0.15, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Ldist_mean_ly[0]->Fit(funcP_L_Gaus_fp[0]);
       grEl_Ldist_mean_ly[0]->DrawClone("AP");
     
       c_el_paramsL->cd(2);
-      gPad->SetMargin(0.15, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Ldist_rsig_ly[0]->Fit(funcP_L_Gaus_fp[1]);
@@ -3670,7 +3702,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     
       // Case 2
       c_el_paramsL->cd(3);
-      gPad->SetMargin(0.15, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Ldist_mean_ly[1]->Fit(funcP_L_Gaus_fp[0]);
@@ -3679,20 +3711,20 @@ void EnergyPlots(bool doResolutionSlices = false){
       c_el_paramsL->cd(4);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
-      gPad->SetMargin(0.15, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       grEl_Ldist_rsig_ly[1]->Fit(funcP_L_Gaus_fp[1]);
       grEl_Ldist_rsig_ly[1]->DrawClone("AP");
 
       // Case 3
       c_el_paramsL->cd(5);
-      gPad->SetMargin(0.15, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Ldist_mean_ly[2]->Fit(funcP_L_Gaus_fp[0]);
       grEl_Ldist_mean_ly[2]->DrawClone("AP");
     
       c_el_paramsL->cd(6);
-      gPad->SetMargin(0.15, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Ldist_rsig_ly[2]->Fit(funcP_L_Gaus_fp[1]);
@@ -3701,82 +3733,20 @@ void EnergyPlots(bool doResolutionSlices = false){
       
       // Case 4
       c_el_paramsL->cd(7);
-      gPad->SetMargin(0.15, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Ldist_mean_ly[3]->Fit(funcP_L_Gaus_fp[0]);
       grEl_Ldist_mean_ly[3]->DrawClone("AP");
     
       c_el_paramsL->cd(8);
-      gPad->SetMargin(0.15, mar_b, 0.10, 0.10);
+      gPad->SetMargin(0.20, 0.05, mar_b, 0.10);
       //gStyle->SetOptStat(1);
       gStyle->SetOptFit(1111);
       grEl_Ldist_rsig_ly[3]->Fit(funcP_L_Gaus_fp[1]);
       grEl_Ldist_rsig_ly[3]->DrawClone("AP");
       gStyle->SetOptFit(1111);
 
-  /*    
-    std::cout<<"Beginning L dist fit for isolated showers\n";
-    TCanvas* c_el_paramsL = new TCanvas("c_el_paramsL","c_el_paramsL",900,600);
-    c_el_paramsL->Divide(3,2);
-    c_el_paramsL->cd(1);
-    gPad->SetMargin(0.15, 0.05, 0.10, 0.10);
-    grEl_Ldist_mean_ly[0]->DrawClone("AP");
-    c_el_paramsL->cd(2);
-    gPad->SetMargin(0.15, 0.05, 0.10, 0.10);
-    grEl_Ldist_mean_ly[1]->DrawClone("AP");
-    c_el_paramsL->cd(3);
-    gPad->SetMargin(0.15, 0.05, 0.10, 0.10);
-    grEl_Ldist_mean_ly[2]->DrawClone("AP");
-    c_el_paramsL->cd(4);
-    gPad->SetMargin(0.15, 0.05, 0.10, 0.10);
-    grEl_Ldist_rsig_ly[0]->DrawClone("AP");
-    c_el_paramsL->cd(5);
-    gPad->SetMargin(0.15, 0.05, 0.10, 0.10);
-    grEl_Ldist_rsig_ly[1]->DrawClone("AP");
-    c_el_paramsL->cd(6);
-    gPad->SetMargin(0.15, 0.05, 0.10, 0.10);
-    grEl_Ldist_rsig_ly[2]->DrawClone("AP");
-    */
-
-    /* 
-    c_el_params->cd(1);
-    auto mg_el_params_Qmu = new TMultiGraph();:
-    mg_el_params_Qmu->Add(grEl_Qdist_mean_sn[0],"AP");
-    mg_el_params_Qmu->Add(grEl_Qdist_mean_sn[1],"AP");
-    mg_el_params_Qmu->Add(grEl_Qdist_mean_sn[2],"AP");
-    mg_el_params_Qmu->Draw("a");
-    mg_el_params_Qmu->GetXaxis()->SetTitle("Electron energy E_{e} [MeV]");
-    mg_el_params_Qmu->GetXaxis()->SetTitle("Shower Q #mu [e]");
-    
-    c_el_params->cd(2);
-    auto mg_el_params_Qsig = new TMultiGraph();
-    mg_el_params_Qsig->Add(grEl_Qdist_rsig_sn[0],"AP");
-    mg_el_params_Qsig->Add(grEl_Qdist_rsig_sn[1],"AP");
-    mg_el_params_Qsig->Add(grEl_Qdist_rsig_sn[2],"AP");
-    mg_el_params_Qsig->Draw("a");
-    mg_el_params_Qsig->GetXaxis()->SetTitle("Electron energy E_{e} [MeV]");
-    mg_el_params_Qsig->GetXaxis()->SetTitle("Shower Q #sigma/#mu");
-    
-    c_el_params->cd(3);
-    auto mg_el_params_Lmu = new TMultiGraph();
-    mg_el_params_Lmu->Add(grEl_Ldist_mean_ly[0],"AP");
-    mg_el_params_Lmu->Add(grEl_Ldist_mean_ly[1],"AP");
-    mg_el_params_Lmu->Add(grEl_Ldist_mean_ly[2],"AP");
-    mg_el_params_Lmu->Draw("a");
-    mg_el_params_Lmu->GetXaxis()->SetTitle("Electron energy E_{e} [MeV]");
-    mg_el_params_Lmu->GetXaxis()->SetTitle("Shower L #mu [#gamma]");
-    
-    c_el_params->cd(4);
-    auto mg_el_params_Lsig = new TMultiGraph();
-    mg_el_params_Lsig->Add(grEl_Ldist_rsig_ly[0],"AP");
-    mg_el_params_Lsig->Add(grEl_Ldist_rsig_ly[1],"AP");
-    mg_el_params_Lsig->Add(grEl_Ldist_rsig_ly[2],"AP");
-    mg_el_params_Lsig->Draw("a");
-    mg_el_params_Lsig->GetXaxis()->SetTitle("Electron energy E_{e} [MeV]");
-    mg_el_params_Lsig->GetXaxis()->SetTitle("Shower L #sigma/#mu");
-    */
-  
 
   
     
@@ -3797,7 +3767,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     <<"Drawing electron ionization-only (track) resolutions for different S/N\n";
     TCanvas* cEvsRes_trk  = new TCanvas("EvsRes_trk","EvsRes_trk",500,500);
     gPad->SetMargin(mar_l, mar_r, mar_b, mar_t);
-    gStyle->SetOptFit(1111);
+    gStyle->SetOptFit(0);
   
     FormatTGraph(grEl_sig_Q_Trk_sn[0], kAzure+5, kAzure+5,  20, 1, 0.8); // 10-1 
     //FormatTGraph(grEl_sig_Q_Trk_sn[1], kBlue, kBlue, 22, 1, 0.8); // 70-1
@@ -3852,6 +3822,19 @@ void EnergyPlots(bool doResolutionSlices = false){
     hd_trk ->AddText("Isolated Electrons");
     hd_trk ->Draw();
     
+    // Display the fit results
+    float y0 = 1.-mar_t-0.02-4*textSize-0.02;
+    TPaveText* hd_fittrk =  MakeTextBox(0.68, y0, 0.03, 10, 0.25 );
+    hd_fittrk -> AddText("S/N ~ 7:1 fit:")->SetTextColor( fResFitTrk[0]->GetLineColor() );
+      hd_fittrk -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitTrk[0]->GetParameter(0), fResFitTrk[0]->GetParError(0)))->SetTextColor( fResFitTrk[0]->GetLineColor() );
+      hd_fittrk -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitTrk[0]->GetParameter(1), fResFitTrk[0]->GetParError(1)))->SetTextColor( fResFitTrk[0]->GetLineColor() );
+    hd_fittrk -> AddText("S/N ~ 10:1 fit:")->SetTextColor( fResFitTrk[1]->GetLineColor() );
+      hd_fittrk -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitTrk[1]->GetParameter(0), fResFitTrk[1]->GetParError(0)))->SetTextColor( fResFitTrk[1]->GetLineColor() );
+      hd_fittrk -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitTrk[1]->GetParameter(1), fResFitTrk[1]->GetParError(1)))->SetTextColor( fResFitTrk[1]->GetLineColor() );
+    hd_fittrk -> AddText("S/N ~ 70:1 fit:")->SetTextColor( fResFitTrk[2]->GetLineColor() );
+      hd_fittrk -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitTrk[2]->GetParameter(0), fResFitTrk[2]->GetParError(0)))->SetTextColor( fResFitTrk[2]->GetLineColor() );
+      hd_fittrk -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitTrk[2]->GetParameter(1), fResFitTrk[2]->GetParError(1)))->SetTextColor( fResFitTrk[2]->GetLineColor() );
+    hd_fittrk->Draw();    
     
     
     
@@ -3869,13 +3852,17 @@ void EnergyPlots(bool doResolutionSlices = false){
     gPad->SetMargin(mar_l, mar_r, mar_b, mar_t);
     gPad->SetGrid();
     gStyle->SetGridColor(kGray);
+    gStyle->SetOptStat(0);
     
     TF1* fResFitQ = (TF1*)fResFit->Clone("resFitQ");
     fResFitQ->SetLineColor( kBlue );
+    fResFitQ->SetLineWidth(2);
     TF1* fResFitQL = (TF1*)fResFit->Clone("resFitQL");
     fResFitQL->SetLineColor( kViolet+2 );
+    fResFitQL->SetLineWidth(2);
     TF1* fResFitQL_LogL = (TF1*)fResFitQL->Clone("resFitQL_LogL");
     fResFitQL_LogL->SetLineColor( kGreen+2 );
+    fResFitQL_LogL->SetLineWidth(2);
       
       // Fits
       grEl_sig_Q_nom->Fit(fResFitQ);
@@ -3917,11 +3904,17 @@ void EnergyPlots(bool doResolutionSlices = false){
     mg_shwr->GetXaxis()->SetTitle("True electron energy [MeV]");
     mg_shwr->GetYaxis()->SetTitle("Shower energy resolution [%]");
     FormatAxes(mg_shwr, axisTitleSize, axisLabelSize,1.1,1.3); 
-    mg_shwr->GetYaxis()->SetRangeUser(1,10);
+    mg_shwr->GetYaxis()->SetRangeUser(0,8);
     //gPad->SetLogy();
+    
+    TPaveText* hd_shwr = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 2);
+    hd_shwr ->AddText("#bf{LArIAT MC}");
+    hd_shwr ->AddText("Isolated Electrons");
+//    hd_shwr ->AddText("Electrons");
+    hd_shwr ->Draw();
       
     
-    TLegend* lg_shwr = MakeLegend( 0.60, 1.-mar_t-0.02, textSize, 4, 0.32 ); 
+    TLegend* lg_shwr = MakeLegend( 0.55, 1.-mar_t-0.02, textSize, 4, 0.32 ); 
     lg_shwr  ->SetBorderSize(1);
     lg_shwr  ->SetFillStyle(1001);
     lg_shwr ->SetNColumns(2);
@@ -3937,30 +3930,32 @@ void EnergyPlots(bool doResolutionSlices = false){
   //  lg_shwr  ->AddEntry((TObject*)0, "","");
     lg_shwr  ->Draw("same");
 
-    TPaveText* hd_shwr = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 2);
-    hd_shwr ->AddText("#bf{LArIAT MC}");
-    hd_shwr ->AddText("Isolated Electrons");
-//    hd_shwr ->AddText("Electrons");
-    hd_shwr ->Draw();
-    gStyle->SetErrorX(0);
-
+    //gStyle->SetErrorX(0);
+      
+    // Display the fit results
+    y0 = 1.-mar_t-0.02-4*textSize-0.02;
+    TPaveText* hd_fitnom =  MakeTextBox(0.68, y0, 0.03, 10, 0.28 );
+    hd_fitnom -> AddText("Q-only fit:")->SetTextColor(kBlue);
+      hd_fitnom -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQ->GetParameter(0), fResFitQ->GetParError(0)))->SetTextColor(kBlue);
+      hd_fitnom -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQ->GetParameter(1), fResFitQ->GetParError(1)))->SetTextColor(kBlue);
+    hd_fitnom -> AddText("Q+L fit:")->SetTextColor(kViolet+2);
+      hd_fitnom -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQL->GetParameter(0), fResFitQL->GetParError(0)))->SetTextColor(kViolet+2);
+      hd_fitnom -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQL->GetParameter(1), fResFitQL->GetParError(1)))->SetTextColor(kViolet+2);
+    hd_fitnom -> AddText("Q+L likelihood fit:")->SetTextColor(kGreen+2);
+      hd_fitnom -> AddText(Form("A = %5.2f #pm %5.2f %%", fResFitQL_LogL->GetParameter(0), fResFitQL_LogL->GetParError(0)))->SetTextColor(kGreen+2);
+      hd_fitnom -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQL_LogL->GetParameter(1), fResFitQL_LogL->GetParError(1)))->SetTextColor(kGreen+2);
+    hd_fitnom -> Draw();
   
   
    
    
     // ----------------------------------------------------
-    // C2)  Compare baseline DUNE to 10 and 20 pe/MeV with all
-    //      three methods
-//    TCanvas*
-   
-    // Next to do:
-    // - add a 100 pe/MeV scenario
-    // - make plot of % improvement over Q-only as function of energy
-    //    * 3 curves for different LY (S/N = 10)
-   
-    
+    // C2)  Plot fractional improvement going from Q-only to
+    //      Q+L likelihood for the 4 different light yields.
+    std::cout
+    <<"============================================\n"
+    <<"Making frac improvement plot\n";
     TCanvas* cFracImprove = new TCanvas("FracImprove","FracImprove",600,600);
-
     TGraphAsymmErrors* g_fracimprov[N_ly];
     for(size_t i=0; i<N_ly; i++){
       g_fracimprov[i] = new TGraphAsymmErrors();
@@ -3979,11 +3974,13 @@ void EnergyPlots(bool doResolutionSlices = false){
         double da = std::sqrt( std::pow(dsig,2) + std::pow(dsig_ref,2) );
         double b = sig_ref;
         double db = dsig_ref;
-        double f = 100.*(a/b);
-        double df = f*std::sqrt( std::pow( da/a,2 ) + std::pow( db/b,2 ) );
+        double f = -100.*(a/b); // negative change = positive improvement
+        double df = fabs(f)*std::sqrt( std::pow( da/a,2 ) + std::pow( db/b,2 ) );
         int n = g_fracimprov[i]->GetN();
         g_fracimprov[i]   ->SetPoint( n, E, f);
         g_fracimprov[i]   ->SetPointError(n-1, dE,dE,df,df);
+        std::cout
+        <<"  pt "<<n<<"  E= "<<E<<"  dE= "<<dE<<"   f = "<<f<<"  df= "<<df<<"\n";
       }
     }
 
@@ -4042,7 +4039,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     <<"****************************************************************\n"
     <<"Drawing big honkin' array of resolution scenarios\n";
     TCanvas* cEvsRes_array = new TCanvas("EvsRes_array","EvsRes_array",800,800);
-    cEvsRes_array->Divide(3,3);
+    cEvsRes_array->Divide(3,3,0.005,0.005,0);
    
     axisTitleSize = 0.05;
     axisLabelSize = 0.05;
@@ -4194,6 +4191,9 @@ void EnergyPlots(bool doResolutionSlices = false){
       hd_fit_ql_logl[i] -> AddText(Form("B = %5.2f #pm %5.2f %%", fResFitQL_LogL->GetParameter(1), fResFitQL_LogL->GetParError(1)))->SetTextColor(kGreen+2);
       hd_fit_ql_logl[i] -> Draw();
       
+      // Lock the pad so formatting doesn't change
+      gPad->SetEditable(false);
+      
     }
 
 
@@ -4223,29 +4223,19 @@ void EnergyPlots(bool doResolutionSlices = false){
   cEvsRes_trk->Write();
   cEvsRes_shwr->Write();
   cEvsRes_array->Write();
-  cEvsRMS_array->Write();
   cFracImprove->Write();
   /////////////////////////////
 
   } // do isolated electron showers
 
   } // End resolution slices
+ 
   //gStyle->SetOptFit(1111);
   fSmearTruePE=false;
 
   outFile->Close();
 
   double duration = (time(0) - startTime)/60.;
-  
-  /*
-  std::cout
-  <<"\n\n\n"
-  <<"==================================================\n"
-  <<"Done with making calorimetry plots\n"
-  <<"Total time: "<<duration<<" minutes\n"
-  <<"==================================================\n";
-  */
-
   printf("\n\n\n");
   printf("======================================\n");
   printf("Done with making calorimetry plots\n");
@@ -4761,20 +4751,6 @@ void MakeCalibrationPlots(){
   refQPerCm = CalcTruncatedMean( QPerCmvals, 0.33, 0);
   refLPerCm = CalcTruncatedMean( LPerCmvals, 0.33, 0);
 
-}
-
-//##############################################################################
-float GetChargeCorrFactor(float day){
-  int bin = hxChargePerCm->GetXaxis()->FindBin(day);
-  float f = hxChargePerCm->GetBinContent(bin) / refQPerCm;
-  return 1./f;
-}
-
-//##############################################################################
-float GetLightCorrFactor(float day){
-  int bin = hxLightPerCm->GetXaxis()->FindBin(day);
-  float f = hxLightPerCm->GetBinContent(bin) / refLPerCm;
-  return 1./f;
 }
 
 
@@ -6064,13 +6040,13 @@ void MakeResRangeGraphs(TH2D* h2d, TGraphErrors* gr ) {
       // Apply offset
       rr -= rr_offset; 
       float mpv, mpv_err, sigma, sigma_err, mean, rms;
-      float llfac = 3.; 
-      float ulfac = 5.; 
+      float llfac = 2.; 
+      float ulfac = 10.; 
 
       float rr_err = rr_err0;
       std::cout<<"rr_err0 = "<<rr_err0<<"    drr= "<<drr<<"    total err = "<<rr_err<<"\n";
       float ra = std::max((float)0.1, rr - rr_err);
-      float rb = rr + rr_err;
+      float rb = (rr + rr_err);
       float dEdxHyp     = 0.5*(MuMPV_from_rr(rr+drr) + MuMPV_from_rr(rr-drr));
       float dEdxHyp_err = 0.5*fabs(MuMPV_from_rr(ra) - MuMPV_from_rr(rb));
       std::cout<<"    dEdxHyp "<<dEdxHyp<<"   err: "<<dEdxHyp_err<<"\n";
@@ -6079,7 +6055,9 @@ void MakeResRangeGraphs(TH2D* h2d, TGraphErrors* gr ) {
       h[index] = Make1DSlice( h2d, i-binwin, i+binwin );
       mean = h[index]->GetMean();
       rms = h[index]->GetRMS();
-      FitToLandau(h[index], mean - llfac*rms, mean + ulfac*rms, mpv, mpv_err, sigma, sigma_err);
+      float max_x= h[index]->GetBinCenter(h[index]->GetMaximumBin());
+      //FitToLandau(h[index], mean - llfac*rms, mean + ulfac*rms, mpv, mpv_err, sigma, sigma_err);
+      FitToLandau(h[index], max_x - llfac*rms, max_x + ulfac*rms, mpv, mpv_err, sigma, sigma_err);
       float dQdx = mpv;
       float dQdx_err = mpv_err;
       if( dQdx > 0. ) {
@@ -7490,7 +7468,7 @@ void ResolutionSliceLoop(
     int npx_y = 250*ny;
     //gStyle->SetOptStat(1110);
     //gStyle->SetOptFit(1111);
-    cArray = new TCanvas(Form("array_%s",canvasName.c_str()),Form("array_%s",canvasName.c_str()),npx_x,npx_y);
+    cArray = new TCanvas(Form("arr_%s",canvasName.c_str()),Form("arr_%s",canvasName.c_str()),npx_x,npx_y);
     cArray->Divide(nx,ny);
     cArray->cd(1);
   }
@@ -7523,6 +7501,9 @@ void ResolutionSliceLoop(
     // send projection to all-purpose gaussian fitting routine
     MultiGausFit( h_tmp, &f2g, &fbg, mode, param); 
 
+    // chi2
+    float chi2      = f2g.GetChisquare()/(f2g.GetNDF()-1);
+    
     // Gaussian fit sigma
     float sig       = f2g.GetParameter(2)*100.;
     float sig_err   = f2g.GetParError(2)*100.;
@@ -7533,6 +7514,8 @@ void ResolutionSliceLoop(
     // incorporate the difference between RMS and sigma 
     // into the sigma error ("hybrid" approach)
     if( useHybridRes ) {
+      
+      float sig0    = sig;
 
       // on very rare occassions the fit returns an abnormally high error. If the fit error
       // is *larger* than the fit-RMS difference, something clearly went wrong so redefine 
@@ -7554,11 +7537,27 @@ void ResolutionSliceLoop(
       // The new error on this resolution will be a quadrature
       // sum of the original sigma error and half the difference
       // between sigma and RMS
-      float sig0    = sig;
+      /*
       sig     = 0.5*(sig + sigRMS);
       sig_err = std::sqrt( std::pow( sig_err,2 ) + std::pow( 0.5*(sigRMS-sig0), 2 ) );
       sig_err_l = sig_err;
-      sig_err_u = sig_err;      
+      sig_err_u = sig_err;    
+      */
+      
+      // weighting based on chi^2 of fit
+      float w_sig = 1.;
+      float w_rms = 1.;
+      if( fHybridRes_UseChisquareWeighting ) 
+        w_rms = std::sqrt(chi2);
+      
+      float W = w_sig + w_rms;
+      float min = std::min(sig,sigRMS);
+      float max = std::max(sig,sigRMS);
+      
+      sig      = (w_sig*sig + w_rms*sigRMS)/(w_sig+w_rms);
+      sig_err_l = std::sqrt( std::pow((w_sig/W)*sig_err,2) + std::pow(sig-min,2) );
+      sig_err_u = std::sqrt( std::pow((w_sig/W)*sig_err,2) + std::pow(sig-max,2) );
+
       
     } 
     
@@ -7604,6 +7603,7 @@ void ResolutionSliceLoop(
       }
       gStyle->SetOptStat(1110);
       gPad->Update();
+      gPad->SetEditable(false);
       
       cdefault->cd();
 
@@ -7674,7 +7674,7 @@ void ParamDistOverlay(
   // Define the main canvas array
   int npx_x = 250*nx;
   int npx_y = 250*ny;
-  TCanvas* cArray = new TCanvas(Form("array_%s",canvasName.c_str()),Form("array_%s",canvasName.c_str()),npx_x,npx_y);
+  TCanvas* cArray = new TCanvas(Form("arr_%s",canvasName.c_str()),Form("arr_%s",canvasName.c_str()),npx_x,npx_y);
   cArray->Divide(nx,ny);
   gStyle->SetOptStat(0);
   cArray->cd(1);
@@ -7718,6 +7718,7 @@ void ParamDistOverlay(
       h_tmp->DrawCopy();
       func_in->DrawCopy("LSAME"); 
       gStyle->SetOptStat(0);
+      gPad->SetEditable(false);
       cdefault->cd();
     }
       

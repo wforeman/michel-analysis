@@ -372,8 +372,6 @@ void MapChi2Space(int ch, double sc1, double sc2, double sig1, double sig2);
 
 void MakeCalibrationPlots();
 void StabilityPlots();
-float GetChargeCorrFactor(float);
-float GetLightCorrFactor(float);
 
 void MakeEventCutSubplot( TCanvas* c, TLine* line1, TLine* line2, int index, TH1D* h_data, TH1D* h_mc, float cutx1, float cutx2, float axts, float axls);
 
@@ -617,11 +615,14 @@ float fMinBraggSlope;
   float                 fTrue_MuEnergyDep;
   int                   fTrue_NumBremmPhotons;
   float                 fTrue_ElEnergy;
-  float                 fTrue_ElShowerPhotons;
   float                 fTrue_ElShowerVisCh[2];
   float                 fTrue_ElTrackPhotons;
+  float                 fTrue_ElShowerPhotons;
   float                 fTrue_ElShowerPhotonsPrompt;
   float                 fTrue_ElShowerPhotonsLate;
+  float                 fTrue_ElShowerPhotonsQuenched;
+  float                 fTrue_ElShowerPhotonsPromptQuenched;
+  float                 fTrue_ElShowerPhotonsLateQuenched;
   float                 fTrue_ElTrackEnergyDep;
   float                 fTrue_ElTrackCharge;
   float                 fTrue_ElShowerEnergyDep;
@@ -815,6 +816,9 @@ void setBranches(TTree *tree){
   tree   ->SetBranchAddress("True_ElShowerPhotons", &fTrue_ElShowerPhotons);
   tree   ->SetBranchAddress("True_ElShowerPhotonsPrompt", &fTrue_ElShowerPhotonsPrompt);
   tree   ->SetBranchAddress("True_ElShowerPhotonsLate", &fTrue_ElShowerPhotonsLate);
+  tree   ->SetBranchAddress("True_ElShowerPhotonsQuenched", &fTrue_ElShowerPhotonsQuenched);
+  tree   ->SetBranchAddress("True_ElShowerPhotonsPromptQuenched", &fTrue_ElShowerPhotonsPromptQuenched);
+  tree   ->SetBranchAddress("True_ElShowerPhotonsLateQuenched", &fTrue_ElShowerPhotonsLateQuenched);
   tree   ->SetBranchAddress("True_ElShowerCharge", &fTrue_ElShowerCharge);
   tree   ->SetBranchAddress("True_ElShowerChargeCol", &fTrue_ElShowerChargeCol);
   tree  ->SetBranchAddress("True_TotalChargeCol",&fTrue_TotalChargeCol);
