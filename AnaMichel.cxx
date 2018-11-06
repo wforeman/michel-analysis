@@ -3,6 +3,7 @@
 bool fDoLikelihoodFit = false;
 bool fDoBareElectrons = true;
 bool fSavePlots       = true;
+int  fRunMode         = 2;
 
 bool fHybridRes_UseChisquareWeighting = true;
 
@@ -120,9 +121,7 @@ void AnaMichel(){
   fEField                   = 0.484;
   
   fApplyCalibCorr           = false;
-  fRunMode                  = 2;
-
-
+  
   fdTcut                    = 1800;
 
   fMinMuClusterSize         = 8;
@@ -183,7 +182,7 @@ void AnaMichel(){
 
 
   // Initialize histograms
-  Init(2);
+  Init(fRunMode);
 //  MakeWeightMap();
   //TimePlots();
 
@@ -192,8 +191,8 @@ void AnaMichel(){
 void Init() { Init(2); }
 
 void Init(int mode) {
-  
-  fRunMode=mode; 
+ 
+  fRunMode = mode; 
    
   fCalAreaConstants[1][1] = 0.05525;
   fCalAreaConstants[1][0] = 0.027;
@@ -463,39 +462,25 @@ void Init(int mode) {
   funcP_Q = new TF1("funcP_Q","(1./ ((1.+[2])*sqrt(2*3.14159))) * ( exp(-0.5*((x-[0])/[1])^2)/[1] + [2]*exp(-0.5*((x-[3])/[4])^2)/[4] )");
   funcP_Q_fp.resize(5);
   funcP_Q_fp[0]   = new TF1("funcP_Q_muPeak","[0] + [1]*x",Emin,Emax);
-    funcP_Q_fp[0] ->SetParameter(0,2100.); // +/- 4286
-    funcP_Q_fp[0] ->SetParameter(1,2.76e4); // +/- 135
+    funcP_Q_fp[0] ->SetParameter(0,1630.); // +/- 4286
+    funcP_Q_fp[0] ->SetParameter(1,2.77e4); // +/- 135
   funcP_Q_fp[1]   = new TF1("funcP_Q_rsigPeak","[0]/x^2 + [1]/x + [2]",Emin,Emax);
-    funcP_Q_fp[1] ->SetParameter(0,8.958); // +/- 3.7
-    funcP_Q_fp[1] ->SetParameter(1,1.174); // +/- 0.367
-    funcP_Q_fp[1] ->SetParameter(2,0.0316); // +/- 0.0074
-    /*
-  funcP_Q_fp[2]   = new TF1("funcP_Q_rBG","[0]+[1]*x+[2]*x^2+[3]*x^3+[4]*x^4 + [5]*x^5",Emin,Emax);
-    funcP_Q_fp[2] ->SetParameter(0,2.067); // +/- 0.08
-    funcP_Q_fp[2] ->SetParameter(1,-0.4703); 
-    funcP_Q_fp[2] ->SetParameter(2,0.04001);
-    funcP_Q_fp[2] ->SetParameter(3,-0.001393); 
-    funcP_Q_fp[2] ->SetParameter(4,2.147e-5); 
-    funcP_Q_fp[2] ->SetParameter(5,-1.221e-7); 
-    */
+    funcP_Q_fp[1] ->SetParameter(0,2.8); // +/- 3.7
+    funcP_Q_fp[1] ->SetParameter(1,1.77); // +/- 0.367
+    funcP_Q_fp[1] ->SetParameter(2,0.0197); // +/- 0.0074
   funcP_Q_fp[2]   = new TF1("funcP_Q_rBG","[0]+[1]*x+[2]*x^2+[3]*x^3",Emin,Emax);
-    funcP_Q_fp[2] ->SetParameter(0,-0.8); // +/- 0.08
-    funcP_Q_fp[2] ->SetParameter(1,0.12); 
-    funcP_Q_fp[2] ->SetParameter(2,-0.0026);
-    funcP_Q_fp[2] ->SetParameter(3,1.6e-5); 
-  /*
-  funcP_Q_fp[3]   = new TF1("funcP_Q_rmuBG","[0]/x^2 + [1]",Emin,Emax);
-    funcP_Q_fp[3]  ->SetParameter(0,87.76); 
-    funcP_Q_fp[3]  ->SetParameter(1,0.8073);
-    */
+    funcP_Q_fp[2] ->SetParameter(0,-0.5937); // +/- 0.08
+    funcP_Q_fp[2] ->SetParameter(1,0.0986); 
+    funcP_Q_fp[2] ->SetParameter(2,-0.002144);
+    funcP_Q_fp[2] ->SetParameter(3,1.211e-5); 
   funcP_Q_fp[3]   = new TF1("funcP_Q_rmuBG","[0]/x^[1] + [2]",Emin,Emax);
-    funcP_Q_fp[3]  ->SetParameter(0,150); 
-    funcP_Q_fp[3]  ->SetParameter(1,2.19);
-    funcP_Q_fp[3]  ->SetParameter(2,0.821);
+    funcP_Q_fp[3]  ->SetParameter(0,87.44); 
+    funcP_Q_fp[3]  ->SetParameter(1,1.956);
+    funcP_Q_fp[3]  ->SetParameter(2,0.8012);
   funcP_Q_fp[4]   = new TF1("funcP_Q_rsigBG","[0] + [1]*x + [2]*x^2",Emin,Emax);
-    funcP_Q_fp[4]  ->SetParameter(0,2.54); 
-    funcP_Q_fp[4]  ->SetParameter(1,0.019); 
-    funcP_Q_fp[4]  ->SetParameter(2,0.0014); 
+    funcP_Q_fp[4]  ->SetParameter(0,2.931); 
+    funcP_Q_fp[4]  ->SetParameter(1,0.00300); 
+    funcP_Q_fp[4]  ->SetParameter(2,0.00156); 
   fFuncP_Q = new TF1("fFuncP_Q",_funcP_Q,-500e3,2500e3,2);
   fFuncP_Q ->SetParName(0,"energy");
   fFuncP_Q ->SetParName(1,"scale");
@@ -506,15 +491,12 @@ void Init(int mode) {
   funcP_L = new TF1("funcP_L","exp(-0.5*((x-[0])/[1])^2)/([1]*sqrt(2*3.14159))");
   funcP_L_fp.resize(2);
   funcP_L_fp[0]   = new TF1("funcP_L_muPeak","[0] + [1]*x",Emin,Emax);
-    funcP_L_fp[0] ->SetParameter(0,3600.); // +/- 2572
+    funcP_L_fp[0] ->SetParameter(0,2800.); // +/- 2572
     funcP_L_fp[0] ->SetParameter(1,2.34e4); // +/- 83
-  //funcP_L_fp[1]   = new TF1("funcP_Q_rsigPeak","[0]/x + [1]",Emin,Emax);
-  //  funcP_L_fp[1] ->SetParameter(0,0.9358); // +/- 3.7
-  //  funcP_L_fp[1] ->SetParameter(1,0.05886); // +/- 0.367
   funcP_L_fp[1]   = new TF1("funcP_Q_rsigPeak","[0]/x^[1] + [2]",Emin,Emax);
-    funcP_L_fp[1] ->SetParameter(0,0.351); // +/- 3.7
-    funcP_L_fp[1] ->SetParameter(1,0.43); // +/- 0.367
-    funcP_L_fp[1] ->SetParameter(2,0.008); // +/- 0.367
+    funcP_L_fp[1] ->SetParameter(0,0.958); // +/- 3.7
+    funcP_L_fp[1] ->SetParameter(1,1.012); // +/- 0.367
+    funcP_L_fp[1] ->SetParameter(2,0.0593); // +/- 0.367
   fFuncP_L = new TF1("fFuncP_L",_funcP_L,-500e3,3000e3,2);
   fFuncP_L ->SetParName(0,"energy");
   fFuncP_L ->SetParName(1,"scale");
@@ -727,7 +709,7 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
   int Eres_bins = 60;
   float Eres_x1   = 2.5; //2.5;
   float Eres_x2   = 62.5; //62.5;
-  float res_bins = 150; // 1200
+  float res_bins = 300; // 150
   float res_max = 3.0;
 
   hTrue_NContainShwr    = new TH1D("True_NContainShwr","Number of fully contained showers ;True electron energy [MeV];Number of events",12, Eres_x1, Eres_x2);
@@ -735,6 +717,8 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
   hQ[1]                 = (TH1D*)hQ[0]->Clone("Q_MC");
   hL[0]                 = new TH1D("L_Data","Photons of Michel shower;Reconstructed light L [#gamma];Events",30,0,3e6);
   hL[1]                 = (TH1D*)hL[0]->Clone("L_MC");
+  hTrue_Q               = new TH1D("TrueQ_Data","True deposited charge of Michel shower;True deposited charge Q [e-];Events",30,0,3e6);
+  hTrue_L               = new TH1D("TrueL_Data","True photons produced in Michel shower;True produced light L [#gamma];Events",30,0,3e6);
   hQRes                 = new TH1D("QRes","Michel electron shower charge resolution;Q_{reco} / Q_{true}^{dep}",120,-1.2,1.2);
   hLRes                 = new TH1D("LRes","Michel electron shower light resolution;L_{reco} / L_{true}^{dep}",120,-1.2,1.2);
   
@@ -858,7 +842,7 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
   std::cout<<"Looping over data tree...\n";
   Loop(0);
   std::cout<<"Looping over MC tree...\n";
-  //Loop(1);
+  Loop(1);
   //EnergyPlots();
   
   //if( fApplyCalibCorr ) {
@@ -1006,6 +990,8 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
     //hEnergyVsResQ->Reset();
     hEnergyVsResPE->Reset();
     //hEnergyVsResL->Reset();
+    hTrue_Q->Reset();
+    hTrue_L->Reset();
     hTrue_EnergyVsEnergyDepTrk->Reset();
     hTrue_EnergyDepTrk->Reset();
     hTrue_EnergyDep->Reset();
@@ -1113,9 +1099,11 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
           // properly incorporates changes in counting statistics.
 
           // TO DO: add quenching
-          
-//          std::binomial_distribution<int> distPrompt( fTrue_ElShowerPhotonsPrompt, fTrue_ElShowerVisCh[ch] );
-//          std::binomial_distribution<int> distTotal( fTrue_ElShowerPhotons, fTrue_ElShowerVisCh[ch] );
+         
+          /* 
+          std::binomial_distribution<int> distPrompt( fTrue_ElShowerPhotonsPrompt, fTrue_ElShowerVisCh[ch] );
+          std::binomial_distribution<int> distTotal( fTrue_ElShowerPhotons, fTrue_ElShowerVisCh[ch] );
+          */
           std::binomial_distribution<int> distPrompt( fTrue_ElShowerPhotonsPromptQuenched, fTrue_ElShowerVisCh[ch] );
           std::binomial_distribution<int> distTotal( fTrue_ElShowerPhotonsQuenched, fTrue_ElShowerVisCh[ch] );
           fTrue_PE_prompt[ch] = distPrompt(generator);
@@ -1248,6 +1236,11 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
     }
 
 
+    // Halt processing and move to next event if containment
+    // criteria are not met:
+    if( !fIsRealData && (fRequireContainment && !fTrue_IsElShwrContained) ) continue;
+    
+    
     // ===================================================
     // Begin event cut evaluation
   
@@ -1541,12 +1534,12 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
 
           }
             
-            float trueE_dep   = fTrue_ElShowerEnergyDep;
-            float trueE       = trueE_dep; if( fUseTrueEnergy ) trueE = fTrue_ElEnergy;
-            float trueL_shower = fTrue_ElShowerPhotons;
-            float trueQ_shower = fTrue_ElShowerCharge;
-
-          //if( energyQL_LogL_2R < E_ll + 3*dE || energyQL_LogL_2R > E_ul - 3*dE ) energyQL_LogL_2R = -9.;
+          float trueE_dep   = fTrue_ElShowerEnergyDep;
+          float trueE       = trueE_dep; if( fUseTrueEnergy ) trueE = fTrue_ElEnergy;
+          float trueL_shower = fTrue_ElShowerPhotons;
+          float trueQ_shower = fTrue_ElShowerCharge;
+           
+           // ----------------------------------------------------
           
           // Fill histograms for visibility, Q, L, PE
           if( fElShowerVis > 0 ) hElShowerVis[type]->Fill( fElShowerVis*1000., fWgt);
@@ -1561,17 +1554,17 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
           hEnergyQL[type]         ->Fill( energyQL, fWgt);
           hEnergyQL_LogL[type]    ->Fill( energyQL_LogL, fWgt);
           hEnergy_QvsQL[type]->Fill( energyQ, energyQL);
-          hRunVsEnergy      ->Fill(fRunNumber, energyQ );
-          hRunVsLight     ->Fill( fRunNumber, L_shower );
-          hRunVsCharge     ->Fill( fRunNumber, Q_shower );
           if( fIsRealData ) {
             hTimeVsCharge     ->Fill( day, Q_shower );
             hTimeVsLight     ->Fill( day, L_shower );
+            hRunVsEnergy      ->Fill(fRunNumber, energyQ );
+            hRunVsLight     ->Fill( fRunNumber, L_shower );
+            hRunVsCharge     ->Fill( fRunNumber, Q_shower );
           }
-         
-          // Recombination histogram
-          hR[type]        ->Fill( (1+fExcRatio)/(1+(fLCorrFactor*L_shower)/(fQCorrFactor*Q_shower)));
           
+          // Recombination histogram
+//        hR[type]        ->Fill( (1+fExcRatio)/(1+(fLCorrFactor*L_shower)/(fQCorrFactor*Q_shower)));
+
           // Light yield histogram and map
           hLightYield[type]->Fill( fElShowerPhel / energyQ, fWgt);
           hLY_ZX[type]      ->Fill( fElShowerCentroid_Z, fElShowerCentroid_X, fElShowerPhel );
@@ -1581,71 +1574,62 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
           hLY_entries_ZX[type]->Fill( fElShowerCentroid_Z, fElShowerCentroid_X );
           hLY_entries_ZY[type]->Fill( fElShowerCentroid_Z, fElShowerCentroid_Y );
           
-
           // Truth information and energy resolution histograms
           if( !fIsRealData ) {
           
             float Qcol_shower     = fElShowerChargeCol;
             float Qcol_total      = fTotalChargeCol[1]; // coll. plane
             float trueQcol_total  = fTrue_TotalChargeCol;
-
-           
+            
             // true deposited energy 
             hTrue_EnergyDep ->Fill(trueE_dep, fWgt);
-           
+            
             // collected charge + PE resolution distrbutions 
             //h_Qcol_vs_QcolRes ->Fill( trueQcol_total, (Qcol_total - trueQcol_total)/trueQcol_total );
             //h_Pe_vs_PeRes     ->Fill( fTrue_ElShowerPhel, (fElShowerPhel - fTrue_ElShowerPhel)/fTrue_ElShowerPhel );
-            hPERes            ->Fill( (fElShowerPhel-fTrue_ElShowerPhel)/fTrue_ElShowerPhel, fWgt);
-              
+            hPERes  ->Fill( (fElShowerPhel-fTrue_ElShowerPhel)/fTrue_ElShowerPhel, fWgt);
+          
             // charge and light (Q and L) 
             hQRes ->Fill( (Q_shower-trueQ_shower) / trueQ_shower, fWgt );
             hLRes ->Fill( (L_shower-trueL_shower) / trueL_shower, fWgt);
-           
-           // resolution 
-            if( !fRequireContainment || (fRequireContainment && fTrue_IsElShwrContained) ) {
-              
-              hEvsRes_E_Q         ->Fill( trueE, (energyQ-trueE)/trueE );
-              hEvsRes_E_Q_2R      ->Fill( trueE, (energyQ_2R-trueE)/trueE );
-              if( energyQL > 0 ) 
-                hEvsRes_E_QL        ->Fill( trueE, (energyQL-trueE)/trueE );
-              if( energyQL_LogL > 0 ) 
-                hEvsRes_E_QL_LogL   ->Fill( trueE, (energyQL_LogL-trueE)/trueE );
-           
-              hEvs_Qtrue          ->Fill( trueE, trueQ_shower ); 
-              if( Q_shower > 0 ) hEvs_Q              ->Fill( trueE, Q_shower );
-              if( L_shower > 0 ) hEvs_L              ->Fill( trueE, L_shower );
-              hEvs_Ltrue          ->Fill( trueE, trueL_shower );
-              hEvsRes_Q           ->Fill( trueE, (Q_shower-trueQ_shower)/trueQ_shower);
-              hEvsRes_L           ->Fill( trueE, (L_shower-trueL_shower)/trueL_shower);
-              /* 
-              if( trueE < 7.5 && (energyQL-trueE)/trueE > 0. && fUseTrueEnergy && fDebugFlag ) {
-                std::cout
-                <<"Weird Q+L resolution: \n"
-                <<"  TrueE  = "<<trueE<<"\n"
-                <<"  DepE   = "<<fTrue_ElShowerEnergyDep<<"\n" 
-                <<"  Q      = "<<Q_shower<<"\n"
-                <<"  L      = "<<L_shower<<"\n"
-                <<"  PE     = "<<fElShowerPhel_qc<<"\n"
-                <<"  vis    = "<<fElShowerVis<<"\n"
-                <<"  EQL    = "<<energyQL<<"\n"
-                <<"  res    = "<<(energyQL-trueE)/trueE<<"\n";
-              }*/
+          
+          
+            hEvsRes_E_Q         ->Fill( trueE, (energyQ-trueE)/trueE );
+            hEvsRes_E_Q_2R      ->Fill( trueE, (energyQ_2R-trueE)/trueE );
+            if( energyQL > 0 ) 
+              hEvsRes_E_QL        ->Fill( trueE, (energyQL-trueE)/trueE );
+            if( energyQL_LogL > 0 ) 
+              hEvsRes_E_QL_LogL   ->Fill( trueE, (energyQL_LogL-trueE)/trueE );
+          
+            hEvs_Qtrue          ->Fill( trueE, trueQ_shower ); 
+            if( Q_shower > 0 ) hEvs_Q              ->Fill( trueE, Q_shower );
+            if( L_shower > 0 ) hEvs_L              ->Fill( trueE, L_shower );
+            hEvs_Ltrue          ->Fill( trueE, trueL_shower );
+            hEvsRes_Q           ->Fill( trueE, (Q_shower-trueQ_shower)/trueQ_shower);
+            hEvsRes_L           ->Fill( trueE, (L_shower-trueL_shower)/trueL_shower);
+            /* 
+            if( trueE < 7.5 && (energyQL-trueE)/trueE > 0. && fUseTrueEnergy && fDebugFlag ) {
+              std::cout
+              <<"Weird Q+L resolution: \n"
+              <<"  TrueE  = "<<trueE<<"\n"
+              <<"  DepE   = "<<fTrue_ElShowerEnergyDep<<"\n" 
+              <<"  Q      = "<<Q_shower<<"\n"
+              <<"  L      = "<<L_shower<<"\n"
+              <<"  PE     = "<<fElShowerPhel_qc<<"\n"
+              <<"  vis    = "<<fElShowerVis<<"\n"
+              <<"  EQL    = "<<energyQL<<"\n"
+              <<"  res    = "<<(energyQL-trueE)/trueE<<"\n";
+            }*/
 
-              //hEvsRes_Q           ->Fill( trueE, (Q_shower-hypQ_shower)/trueQ_shower);
-              //hEvsRes_L           ->Fill( trueE, (L_shower-hypL_shower)/trueL_shower);
-              //hEnergyVsResPE  ->Fill( trueE, resPE, fWgt);
+            //hEvsRes_Q           ->Fill( trueE, (Q_shower-hypQ_shower)/trueQ_shower);
+            //hEvsRes_L           ->Fill( trueE, (L_shower-hypL_shower)/trueL_shower);
+            //hEnergyVsResPE  ->Fill( trueE, resPE, fWgt);
 
-              //hEnergyDepResQ    ->Fill( resEQ, fWgt);
-              //hEnergyDepResQL   ->Fill( resEQL, fWgt);
-            
-            }
+            //hEnergyDepResQ    ->Fill( resEQ, fWgt);
+            //hEnergyDepResQL   ->Fill( resEQL, fWgt);
 
-            //beta = fTrue_ElShowerCharge / fTrue_ElShowerPhotons;
-            //hTrue_Beta->Fill(beta);
-            //hTrue_R ->Fill( (1-beta*alpha)/(1+beta), fWgt);
+          }// end if MC
 
-          }//<-- end is real data
         }//<-- goodshower3D && dT cut
       }// good shower3D 
     }//good shower 2D
@@ -2761,7 +2745,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   gr_Qparam[0]->GetXaxis()->SetTitle("Deposited energy [MeV]");
   gr_Qparam[0]->GetXaxis()->SetTitleSize(0.06);
   gr_Qparam[0]->GetYaxis()->SetTitleSize(0.06);
-  gr_Qparam[0]->GetYaxis()->SetTitleOffset(1.3);
+  gr_Qparam[0]->GetYaxis()->SetTitleOffset(1.4);
   gr_Qparam[0]->GetXaxis()->SetLabelSize(0.05);
   gr_Qparam[0]->GetYaxis()->SetLabelSize(0.05);
   CopyTGraphFormat(gr_Qparam[0],gr_Qparam[1], true);
@@ -2789,6 +2773,8 @@ void EnergyPlots(bool doResolutionSlices = false){
     gr_Qparam[i]->GetYaxis()->SetRangeUser( 
       0.6*TMath::MinElement(gr_Qparam[i]->GetN(),gr_Qparam[i]->GetY()),
       1.3*TMath::MaxElement(gr_Qparam[i]->GetN(),gr_Qparam[i]->GetY()));
+    gr_Qparam[i]->GetXaxis()->SetNdivisions(505);
+    gr_Qparam[i]->GetYaxis()->SetNdivisions(505);
     gr_Qparam[i]->Draw("AP");
   }
   
@@ -2834,7 +2820,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   gr_Lparam[0]->GetXaxis()->SetLabelSize(0.05);
   gr_Lparam[0]->GetYaxis()->SetLabelSize(0.05);
   CopyTGraphFormat(gr_Lparam[0],gr_Lparam[1], true);
-  gr_Lparam[0]->GetYaxis()->SetTitle("Peak #mu [e]");
+  gr_Lparam[0]->GetYaxis()->SetTitle("Peak #mu [#gamma]");
   gr_Lparam[1]->GetYaxis()->SetTitle("Peak #sigma/#mu");
    
   gr_Lparam[0]->Fit(funcP_L_fp[0]);
@@ -3175,41 +3161,41 @@ void EnergyPlots(bool doResolutionSlices = false){
     std::vector< std::vector< std::vector< float >>> vParams_Q = 
     { // SN = 7:1
       {
-        { -1.5e4, 2.62e4 },        // A
-        { 0.375,   0.683, 0.0282 } // B
+        { -1.52e4, 2.63e4 },        // A
+        { 0.395,   0.699, 0.0260 } // B
       }, 
       // SN = 10:1
       {
-        { -1.42e4, 2.69e4 },        // A
-        { 0.448,   0.958, 0.0303 } // B
+        { -1.51e4, 2.70e4 },        // A
+        { 0.388,   0.856, 0.0258 } // B
       },
       // SN = 70:1
       {
-        { -1.2e4, 2.77e4 },        // A
-        { 0.408,   1.11,  0.0174 } // B
+        { -1.21e4, 2.77e4 },        // A
+        { 0.429,   1.13,  0.0159 } // B
       }
     };
 
     std::vector< std::vector< std::vector< float >>> vParams_L = 
     { // LY 0
       {
-        { -3.0e4,  2.39e4   },        // A
-        { 1.07,    0.621,   0.0 } // B
+        { -2.82e4,  2.39e4   },        // A
+        { 1.32,    0.706,   0.0199 } // B
       }, 
       // LY 1
       {
-        { -1.5e4,   2.36e4  },        // A
-        { 0.456,   0.587, 0.0 } // B
+        { -1.26e4,   2.36e4  },        // A
+        { 0.526,   0.691, 0.0147 } // B
       },
       // LY 2
       {
-        { -1.2e4,   2.34e4  },        // A
-        {  0.361,  0.652, 0.00698 } // B
+        { -1.21e4,   2.36e4  },        // A
+        {  0.360,  0.631, 0.00764 } // B
       },
       // LY 3 (need to define)
       {
-        { -1.3e4,    2.35e4  },        // A
-        {  0.286,  0.784, 0.0108 } // B
+        { -1.25e4,    2.36e4  },        // A
+        {  0.291,  0.814, 0.0140 } // B
       }
     };
 
@@ -3264,7 +3250,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     ResolutionSliceLoop(
       hEvsRes_E_Trk, Emin, Emax, 10, 1.,
       true, "EQ_Trk_e_nom", "Q-only Energy (electron ion.)",3,3,-0.8,0.8,
-      0, 0.33, useHybridRes,
+      0, 0.33, false,
         Emin, 42.5,
       grEl_sig_Q_Trk_nom,
       grEl_rms_Q_Trk_nom);
@@ -3345,7 +3331,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     fSmearFactor[1] = 0.1;
     fSmearTruePE    = true;
     fSmearMode      = 1;    
-    fCorrectQuenching = true; // false
+    fCorrectQuenching = true;
    
    
     // Now do all hypothetical scenarios 
@@ -3488,7 +3474,9 @@ void EnergyPlots(bool doResolutionSlices = false){
     grEl_Qdist_mean_nom ->SetMarkerSize(0.6);
     grEl_Qdist_mean_nom ->SetMarkerColor(kBlack);
     grEl_Qdist_mean_nom ->SetLineColor(kBlack);
-    FormatAxes(grEl_Qdist_mean_nom, 0.06,0.05,1.,1.4); 
+    grEl_Qdist_mean_nom ->GetXaxis()->SetNdivisions(505);
+    grEl_Qdist_mean_nom ->GetYaxis()->SetNdivisions(505);
+    FormatAxes(grEl_Qdist_mean_nom, 0.06,0.05,1.,1.5); 
     grEl_Qdist_mean_nom ->GetXaxis()->SetTitle("Electron energy [MeV]");
     grEl_Qdist_mean_nom ->GetYaxis()->SetTitle("#mu_{Q} [e]");
     // Q sigma
@@ -3801,8 +3789,8 @@ void EnergyPlots(bool doResolutionSlices = false){
     mg_trk->Add(grEl_sig_Q_Trk_sn[1],"AP");
     mg_trk->Add(grEl_sig_Q_Trk_sn[2],"AP");
     mg_trk->Draw("a");
-    mg_trk->GetXaxis()->SetTitle("True deposited ionization energy [MeV]");
-    mg_trk->GetYaxis()->SetTitle("Electron ionization energy resolution [%]");
+    mg_trk->GetXaxis()->SetTitle("True electron ionization energy deposited [MeV]");
+    mg_trk->GetYaxis()->SetTitle("Ionization energy resolution [%]");
     FormatAxes(mg_trk, axisTitleSize, axisLabelSize,1.1,1.3);  
     mg_trk->GetYaxis()->SetRangeUser(0,15);
    
@@ -3978,7 +3966,7 @@ void EnergyPlots(bool doResolutionSlices = false){
         double df = fabs(f)*std::sqrt( std::pow( da/a,2 ) + std::pow( db/b,2 ) );
         int n = g_fracimprov[i]->GetN();
         g_fracimprov[i]   ->SetPoint( n, E, f);
-        g_fracimprov[i]   ->SetPointError(n-1, dE,dE,df,df);
+        g_fracimprov[i]   ->SetPointError(n, dE,dE,df,df);
         std::cout
         <<"  pt "<<n<<"  E= "<<E<<"  dE= "<<dE<<"   f = "<<f<<"  df= "<<df<<"\n";
       }
@@ -4134,7 +4122,7 @@ void EnergyPlots(bool doResolutionSlices = false){
       mg_array[i]->Draw("a");
       mg_array[i]->GetXaxis()->SetTitle("True electron energy [MeV]");
       mg_array[i]->GetYaxis()->SetTitle("Shower energy resolution [%]");
-      mg_array[i]->GetYaxis()->SetRangeUser(0.,18.);
+      mg_array[i]->GetYaxis()->SetRangeUser(0.,17.5);
       //mg_array[i]->GetYaxis()->SetRangeUser(1,80);
       //gPad->SetLogy();
       FormatAxes(mg_array[i], axisTitleSize, axisLabelSize,1.1,1.3);  
@@ -4764,7 +4752,7 @@ void SpatialPlots(){
   float mar_t  = 0.08;
   float mar_l  = 0.14;
   float mar_r  = 0.02;
-  float axisTitleSize = 0.055;
+  float axisTitleSize = 0.05;
   float axisTitleOffset = 1.2;
   float axisLabelSize = 0.045;
   float leg_x1 = mar_l + 0.03;
@@ -7212,7 +7200,7 @@ void MultiGausFit(TH1D* h, TF1* f2g, TF1* fbg, int mode, float param){
     
     // Find where histogram drops below given threshold
     // of the peak height (for use in defining fit range)
-    size_t minBinsForFit = 10;
+    size_t minBinsForFit = 8;
     if( param >= 0 ) {
       minBinsForFit /= 2;
       for(size_t ii=max_bin+minBinsForFit; ii<h->GetXaxis()->GetNbins(); ii++){

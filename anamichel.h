@@ -60,6 +60,8 @@ TH1D* hCrsMuPE_prompt[2][2];
 TH1D* hPE[2];
 TH1D* hQ[2];
 TH1D* hL[2];
+TH1D* hTrue_Q;
+TH1D* hTrue_L;
 TH1D* hQRes;
 TH1D* hLRes;
 
@@ -221,7 +223,6 @@ float TauConversion(float);
 bool fApplyCalibCorr;
 
 int fCh;
-int fRunMode;
 int fMinRun;
 int fMaxRun;
 int fRunStart;
