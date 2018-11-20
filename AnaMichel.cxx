@@ -1,6 +1,6 @@
 #include "anamichel.h"
 
-bool fDoLikelihoodFit = false;
+bool fDoLikelihoodFit = true;
 bool fDoBareElectrons = true;
 bool fSavePlots       = true;
 int  fRunMode         = 2;
@@ -243,7 +243,7 @@ void Init(int mode) {
   }
 
   if( fRunMode == 2 ) {
-    runtag                    = "Run IIB";
+    runtag                    = "Run II";
     fUsePmt[0]                = true;
     fUsePmt[1]                = true;
     fRunStart                 = 9438;
@@ -1239,8 +1239,7 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
     // Halt processing and move to next event if containment
     // criteria are not met:
     if( !fIsRealData && (fRequireContainment && !fTrue_IsElShwrContained) ) continue;
-    
-    
+   
     // ===================================================
     // Begin event cut evaluation
   
@@ -1775,13 +1774,15 @@ void LightPlots(){
   float text_y2 = 1.-mar_t-0.03;
   float axisTitleSize = 0.045;
 
+  /*
   // Setting the Latex Header
   TLatex *t = new TLatex();
   t->SetNDC();
   t->SetTextFont(42);
   t->SetTextSize(textSize);
   t->SetTextAlign(13);
-  
+  */
+
   gStyle->SetOptStat(0);
 
   //=======================================================================
@@ -1826,7 +1827,7 @@ void LightPlots(){
     lTrigEff[ch] ->Draw();
   
     tTrigEff[ch] = MakeTextBox( text_x1, leg_y2, textSize, 3);
-    tTrigEff[ch] -> AddText("#bf{LArIAT Preliminary}"); 
+    tTrigEff[ch] -> AddText("#bf{LArIAT}"); 
     sprintf(buffer,"%s MC",runtag.c_str()); tTrigEff[ch]->AddText(buffer);
     sprintf(buffer,"%s",pmttag[ch].c_str()); tTrigEff[ch]->AddText(buffer);
     tTrigEff[ch]->Draw();
@@ -1859,7 +1860,7 @@ void LightPlots(){
   for(int ch=0; ch<2; ch++){
     
     tNoSmear[ch] = MakeTextBox( text_x1, leg_y2, textSize, 3);
-    tNoSmear[ch] -> AddText("#bf{LArIAT Preliminary}"); 
+    tNoSmear[ch] -> AddText("#bf{LArIAT}"); 
     sprintf(buffer,"%s MC",runtag.c_str()); tNoSmear[ch]->AddText(buffer);
     sprintf(buffer,"%s",pmttag[ch].c_str()); tNoSmear[ch]->AddText(buffer);
     
@@ -1941,7 +1942,6 @@ void LightPlots(){
     cDataMC[ch] -> Divide(2,1);
     int index=0;
     
-
     // ---------------------------------------
     // Prompt light
     index=0;
@@ -1982,9 +1982,10 @@ void LightPlots(){
     AddTextLine(t, text_x1, leg_y2, 3, buffer);
     */
     TPaveText* hd1 = MakeTextBox(text_x1, leg_y2, textSize, 3);
-    hd1->AddText("#bf{LArIAT Preliminary}");
-    hd1->AddText(Form("%s: %s",runtag.c_str(),pmttag[ch].c_str()));
-    hd1->AddText(Form("%i Events",(int)hc2PE_prompt[0][ch]->GetEntries() ) );
+    hd1->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+    hd1->AddText("Cosmic Michel e^{+/-}");
+    hd1->AddText(Form("%s",pmttag[ch].c_str()));
+//    hd1->AddText(Form("%i Events",(int)hc2PE_prompt[0][ch]->GetEntries() ) );
 //    sprintf(buffer,"%s: %s",runtag.c_str(),pmttag[ch].c_str()); header[ch]->AddText(buffer);
 //    sprintf(buffer,"%i Events",(int)hc2PE_prompt[0][ch]->GetEntries() ); header[ch]->AddText(buffer);
     hd1->Draw();
@@ -2037,9 +2038,9 @@ void LightPlots(){
     lDataMC[ch][index] ->Draw();
     
     TPaveText* hd2 = MakeTextBox(text_x1, leg_y2, textSize, 3);
-    hd2->AddText("#bf{LArIAT Preliminary}");
-    hd2->AddText(Form("%s: %s",runtag.c_str(),pmttag[ch].c_str()));
-    hd2->AddText(Form("%i Events",(int)hc2PE_prompt[0][ch]->GetEntries() ) );
+    hd2->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+    hd2->AddText("Cosmic Michel e^{+/-}");
+    hd2->AddText(Form("%s",pmttag[ch].c_str()));
 //    sprintf(buffer,"%s: %s",runtag.c_str(),pmttag[ch].c_str()); header[ch]->AddText(buffer);
 //    sprintf(buffer,"%i Events",(int)hc2PE_prompt[0][ch]->GetEntries() ); header[ch]->AddText(buffer);
     hd2->Draw();
@@ -2171,8 +2172,8 @@ void EnergyPlots(bool doResolutionSlices = false){
   hQ[1] ->DrawCopy("sameaxis"); // redraw axis
   
   TPaveText* ptq = MakeTextBox(mar_l + 0.02, leg_y2, textSize, 2);
-  ptq ->AddText("#bf{LArIAT Preliminary}");
-  ptq ->AddText(Form("%s Dataset",runtag.c_str()));
+  ptq->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  ptq->AddText("Cosmic Michel e^{+/-}");
   ptq  ->Draw();
 
   TLegend* lq = MakeLegend(0.55, leg_y2, textSize, 2);
@@ -2219,8 +2220,9 @@ void EnergyPlots(bool doResolutionSlices = false){
   hL[1] ->DrawCopy("sameaxis"); // redraw axis
   
   TPaveText* ptl = MakeTextBox(mar_l + 0.02, leg_y2, textSize, 2);
-  ptl ->AddText("#bf{LArIAT Preliminary}");
-  ptl ->AddText(Form("%s Dataset",runtag.c_str()));
+  ptl->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  ptl->AddText("Cosmic Michel e^{+/-}");
+  //ptl ->AddText(Form("%s Dataset",runtag.c_str()));
   ptl  ->Draw();
 
   TLegend* ll = MakeLegend(0.55, leg_y2, textSize, 2);
@@ -2274,23 +2276,23 @@ void EnergyPlots(bool doResolutionSlices = false){
   hTrue_EnergyDepTrk ->SetLineColor(kBlack);
   hTrue_EnergyDepTrk->DrawCopy("hist same");
 
-  TPaveText* headTrk = MakeTextBox(leg_x1, leg_y2, textSize, 5);
-  headTrk ->AddText("#bf{LArIAT Preliminary}");
-  headTrk ->AddText(Form("%s Dataset",runtag.c_str()));
-  headTrk ->AddText(Form("%i Events",(int)hEnergyTrk[0]->GetEntries()));
+  TPaveText* headTrk = MakeTextBox(leg_x1, leg_y2, textSize, 4);
+  headTrk->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  //headTrk ->AddText(Form("%i Events",(int)hEnergyTrk[0]->GetEntries()));
+  headTrk->AddText("Cosmic Michel e^{+/-}");
   headTrk ->AddText("Q-only ion. trk energy")->SetTextColor(kBlue);
   headTrk ->AddText("w/recomb. correction")->SetTextColor(kBlue);
   headTrk->Draw();
 
-  TPaveText* ptTrk  = MakeTextBox(leg_x1, leg_y2-5.*textSize - 0.02, textSize, 4);
+  TPaveText* ptTrk  = MakeTextBox(leg_x1, leg_y2-4.*textSize - 0.02, textSize, 1);
   ptTrk   ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyTrk[0],hEnergyTrk[1])));
-  ptTrk   ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyTrk[0],hTrue_EnergyDepTrk)));
-  ptTrk   ->AddText("Cuts:");
+  //ptTrk   ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyTrk[0],hTrue_EnergyDepTrk)));
+//  ptTrk   ->AddText("Cuts:");
 //  ptTrk   ->AddText(Form("  #DeltaT > %3.1f #mus",fdTcut/1000.));
-  ptTrk   ->AddText (Form("  3D shower (Npts #geq %1d)",fMinNumPts3D ));
+//  ptTrk   ->AddText (Form("  3D shower (Npts #geq %1d)",fMinNumPts3D ));
   ptTrk   ->Draw();
-  TLegend* legTrk = MakeLegend(leg_x1+0.08, leg_y2 - 9.*textSize-0.07, textSize, 3);
-  legTrk  ->AddEntry(hTrue_EnergyDepTrk, "MC true E_{dep}^{ion}", "L");   
+  TLegend* legTrk = MakeLegend(leg_x1+0.08, leg_y2 - 5.*textSize-0.07, textSize, 3);
+  legTrk  ->AddEntry(hTrue_EnergyDepTrk, "MC true #it{E}_{#it{dep}}^{#it{ion}}", "L");   
   legTrk  ->AddEntry(hEnergyTrk[1], "MC reco", "LF");
   legTrk  ->AddEntry(hEnergyTrk[0], "Data", "LPE");
   legTrk  ->Draw();
@@ -2386,27 +2388,29 @@ void EnergyPlots(bool doResolutionSlices = false){
   hEnergyQ[1] ->DrawCopy("sameaxis"); // redraw axis
   hTrue_EnergyDep->DrawCopy("hist same");
   
-  TPaveText* hdr1 = MakeTextBox(leg_x1, leg_y2, textSize, 5);
-  hdr1 ->AddText("#bf{LArIAT Preliminary}");
-  hdr1 ->AddText(Form("%s Dataset",runtag.c_str()));
-  hdr1 ->AddText(Form("%i Events",(int)hEnergyQ[0]->GetEntries()));
+  TPaveText* hdr1 = MakeTextBox(leg_x1, leg_y2, textSize, 4);
+  hdr1->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  hdr1->AddText("Cosmic Michel e^{+/-}");
+  //hdr1 ->AddText(Form("%s Dataset",runtag.c_str()));
+  //hdr1 ->AddText(Form("%i Events",(int)hEnergyQ[0]->GetEntries()));
   hdr1 ->AddText("Q-only shower energy")->SetTextColor(kBlue);
   hdr1 ->AddText("w/recomb. correction")->SetTextColor(kBlue);
   hdr1 ->Draw();
 
-  TPaveText* pt1 = MakeTextBox(leg_x1, leg_y2-5.*textSize - 0.02, textSize, 5);
+  TPaveText* pt1 = MakeTextBox(leg_x1, leg_y2-4.*textSize - 0.02, textSize, 2);
   pt1 ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQ[0],hEnergyQ[1])));
   pt1 ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQ[0],hTrue_EnergyDep)));
-  pt1 ->AddText("Cuts:");
-  pt1 ->AddText(Form("  #DeltaT > %3.1f #mus", fdTcut/1000.));
-  pt1 ->AddText(Form("  3D shower (Npts #geq %1d)",fMinNumPts3D ));
+  //pt1 ->AddText("Cuts:");
+  //pt1 ->AddText(Form("  #DeltaT > %3.1f #mus", fdTcut/1000.));
+  //pt1 ->AddText(Form("  3D shower (Npts #geq %1d)",fMinNumPts3D ));
   pt1 ->Draw();
   
-  TLegend* leg1  = MakeLegend(leg_x1+0.08, leg_y2 - 10.*textSize-0.07, textSize, 3);
-  leg1 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
+  TLegend* leg1  = MakeLegend(leg_x1+0.08, leg_y2 - 6.*textSize-0.07, textSize, 3);
+  leg1 ->AddEntry(hTrue_EnergyDep, "MC true #it{E}_{#it{dep}}", "L");   
   leg1 ->AddEntry(hEnergyQ[1], "MC reco", "LF");
   leg1 ->AddEntry(hEnergyQ[0], "Data", "LPE");
   leg1 ->Draw();
+ 
  
   
   // ------------------------------------------
@@ -2424,24 +2428,24 @@ void EnergyPlots(bool doResolutionSlices = false){
   hEnergyQL[1] ->DrawCopy("sameaxis"); // redraw axis
   hTrue_EnergyDep->DrawCopy("hist same");
   
-  TPaveText* hdr2 = MakeTextBox(leg_x1, leg_y2, textSize, 5);
-  hdr2 ->AddText("#bf{LArIAT Preliminary}");
-  hdr2 ->AddText(Form("%s Dataset",runtag.c_str()));
-  hdr2 ->AddText(Form("%i Events",(int)hEnergyQL[0]->GetEntries()));
+  TPaveText* hdr2 = MakeTextBox(leg_x1, leg_y2, textSize, 4);
+  hdr2->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  hdr2->AddText("Cosmic Michel e^{+/-}");
+  //hdr2 ->AddText(Form("%i Events",(int)hEnergyQL[0]->GetEntries()));
   hdr2 ->AddText("Combined Q+L")->SetTextColor(kMagenta+2);
   hdr2 ->AddText("shower energy")->SetTextColor(kMagenta+2);
   hdr2 ->Draw();
 
-  TPaveText* pt2 = MakeTextBox(leg_x1, leg_y2-5.*textSize - 0.02, textSize, 5);
+  TPaveText* pt2 = MakeTextBox(leg_x1, leg_y2-4.*textSize - 0.02, textSize, 2);
   pt2 ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQL[0],hEnergyQL[1])));
   pt2 ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQL[0],hTrue_EnergyDep)));
-  pt2 ->AddText("Cuts:");
-  pt2 ->AddText(Form("  #DeltaT > %3.1f #mus", fdTcut/1000.));
-  pt2 ->AddText(Form("  3D shower (Npts #geq %1d)",fMinNumPts3D ));
+//  pt2 ->AddText("Cuts:");
+//  pt2 ->AddText(Form("  #DeltaT > %3.1f #mus", fdTcut/1000.));
+//  pt2 ->AddText(Form("  3D shower (Npts #geq %1d)",fMinNumPts3D ));
   pt2 ->Draw();
   
-  TLegend* leg2  = MakeLegend(leg_x1+0.08, leg_y2 - 10.*textSize-0.07, textSize, 3);
-  leg2 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
+  TLegend* leg2  = MakeLegend(leg_x1+0.08, leg_y2 - 6.*textSize-0.07, textSize, 3);
+  leg2 ->AddEntry(hTrue_EnergyDep, "MC true #it{E}_{#it{dep}}", "L");   
   leg2 ->AddEntry(hEnergyQL[1], "MC reco", "LF");
   leg2 ->AddEntry(hEnergyQL[0], "Data", "LPE");
   leg2 ->Draw();
@@ -2496,6 +2500,13 @@ void EnergyPlots(bool doResolutionSlices = false){
   b3_leg1 ->AddEntry(hEnergyQ[0], "Data", "LPE");
   b3_leg1 ->Draw();
   */
+  
+  TPaveText* b3_hd1 = MakeTextBox(0.17, 0.88, textSize, 3);
+  b3_hd1->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  b3_hd1->AddText("Cosmic Michel e^{+/-}");
+  b3_hd1->AddText("Q-only")->SetTextColor(kBlue);
+  b3_hd1 ->Draw();
+  
   TLegend* b3_leg1  = MakeLegend(0.6, 0.88, 0.045, 3);
   b3_leg1 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
   b3_leg1 ->AddEntry(hEnergyQ[1], "MC reco", "LF");
@@ -2560,6 +2571,12 @@ void EnergyPlots(bool doResolutionSlices = false){
   b3_leg3 ->AddEntry(hEnergyQL[0], "Data", "LPE");
   b3_leg3 ->Draw();
   */
+  TPaveText* b3_hd2 = MakeTextBox(0.17, 0.88, textSize, 3);
+  b3_hd2->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  b3_hd2->AddText("Cosmic Michel e^{+/-}");
+  b3_hd2->AddText("Q+L")->SetTextColor(kMagenta+2);
+  b3_hd2 ->Draw();
+
   TLegend* b3_leg3  = MakeLegend(0.6, 0.88, 0.045, 3);
   b3_leg3 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
   b3_leg3 ->AddEntry(hEnergyQL[1], "MC reco", "LF");
@@ -2592,6 +2609,12 @@ void EnergyPlots(bool doResolutionSlices = false){
   b3_leg2 ->AddEntry(hEnergyQL_LogL[0], "Data", "LPE");
   b3_leg2 ->Draw();
   */
+  TPaveText* b3_hd3 = MakeTextBox(0.17, 0.88, textSize, 3);
+  b3_hd3->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  b3_hd3->AddText("Cosmic Michel e^{+/-}");
+  b3_hd3->AddText("Q+L (likelihood)")->SetTextColor(kGreen+2);
+  b3_hd3 ->Draw();
+  
   TLegend* b3_leg2  = MakeLegend(0.6, 0.88, 0.045, 3);
   b3_leg2 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
   b3_leg2 ->AddEntry(hEnergyQL_LogL[1], "MC reco", "LF");
@@ -2911,7 +2934,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     gr_sigma_Q    ->SetMarkerStyle(20);
     gr_sigma_Q    ->SetMarkerSize(1.);
     gr_sigma_Q    ->SetLineColor(kBlue);
-    gr_sigma_Q    ->SetLineWidth(2);
+    gr_sigma_Q    ->SetLineWidth(1);
     CopyTGraphFormat(gr_sigma_Q, gr_rms_Q);
     gr_rms_Q      ->SetLineStyle(2);
     gr_rms_Q      ->SetMarkerStyle(4);
@@ -2973,15 +2996,15 @@ void EnergyPlots(bool doResolutionSlices = false){
     legg  ->SetBorderSize(1);
     legg  ->SetFillStyle(1001);
     legg  ->AddEntry(gr_sigma_Q,"Q-only #sigma_{p}","PL");
-    legg  ->AddEntry(gr_rms_Q,"Q-only RMS","PL");
     legg  ->AddEntry(gr_sigma_QL,"Q+L #sigma_{p}","PL");
-    legg  ->AddEntry(gr_rms_QL,"Q+L RMS","PL");
     legg  ->AddEntry(gr_sigma_QL_LogL,"Q+L #sigma_{p} (likelihood)","PL");
+    legg  ->AddEntry(gr_rms_Q,"Q-only RMS","PL");
+    legg  ->AddEntry(gr_rms_QL,"Q+L RMS","PL");
     legg  ->AddEntry(gr_rms_QL_LogL,"Q+L RMS (likelihood)","PL");
     legg  ->Draw("same");
     TPaveText* headd = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 2);
-    headd ->AddText("#bf{LArIAT Run IIB MC}");
-    headd ->AddText("Cosmic Michel Electrons");
+    headd ->AddText("#bf{LArIAT Run II MC}");
+    headd ->AddText("Michel e^{+/-}");
     //headd ->AddText(Form("#tau_{e} = %4.2f ms",0.83));
     //headd ->AddText(Form("#sigma_{PE} = %4.1f%%",hPERes->GetRMS()*100.));
     headd ->Draw();
@@ -3097,7 +3120,8 @@ void EnergyPlots(bool doResolutionSlices = false){
     std::string mcfilenames[3]={
       "files/MichelAna_mc2_sn7to1.root",
       "files/MichelAna_mc2_sn10to1.root",
-      "files/MichelAna_mc2_electrons.root"};
+//      "files/MichelAna_mc2_electrons.root"};
+      "files/MichelAna_mc2_nominal.root"};
     
     // Q,L (nominal)
     TGraphAsymmErrors* grEl_Qdist_mean_nom = new TGraphAsymmErrors;
@@ -3217,7 +3241,7 @@ void EnergyPlots(bool doResolutionSlices = false){
 
     
     // First find the default LY
-    TFile* file = new TFile("files/MichelAna_mc2_electrons.root","read");
+    TFile* file = new TFile("files/MichelAna_mc2_nominal.root","read");
     TTree* tree = (TTree*)file->Get("michelana/anatree");
     setBranches(tree);
     SetTrigEffParams(0);
@@ -3446,7 +3470,7 @@ void EnergyPlots(bool doResolutionSlices = false){
         
         ResolutionSliceLoop(
           hEvsRes_E_QL_LogL,Emin, Emax,10,1.,
-          true, Form("EQL_LogL_e_sn%lu_ly%lu",i_sn, i_ly), "Q+L Shower Energy",3,3,-0.8,0.8,
+          true, Form("EQL_LogL_e_sn%lu_ly%lu",i_sn, i_ly), "Q+L (likelihood) Shower Energy",3,3,-0.8,0.8,
           0, FitThresh, useHybridRes,
             Emin, 42.5,
           grEl_sig_QL_LogL_sn_ly[i_sn][i_ly],
@@ -3958,12 +3982,15 @@ void EnergyPlots(bool doResolutionSlices = false){
         dsig_ref  = grEl_sig_Q_sn_ly[1][i]->GetErrorY(ipt);
         grEl_sig_QL_LogL_sn_ly[1][i]->GetPoint(ipt,E,sig);
         dsig      = grEl_sig_QL_LogL_sn_ly[1][i]->GetErrorY(ipt);
-        double a = sig-sig_ref;
-        double da = std::sqrt( std::pow(dsig,2) + std::pow(dsig_ref,2) );
-        double b = sig_ref;
-        double db = dsig_ref;
-        double f = -100.*(a/b); // negative change = positive improvement
-        double df = fabs(f)*std::sqrt( std::pow( da/a,2 ) + std::pow( db/b,2 ) );
+        double f = -100.*( sig/sig_ref - 1. );
+        double df = 100.*(sig/sig_ref)*std::sqrt( std::pow(dsig/sig,2) + std::pow(dsig_ref/sig_ref,2) );
+        
+        //double a = sig-sig_ref;
+        //double da = std::sqrt( std::pow(dsig,2) + std::pow(dsig_ref,2) );
+        //double b = sig_ref;
+        //double db = dsig_ref;
+        //double f = -100.*(a/b); // negative change = positive improvement
+        //double df = fabs(f)*std::sqrt( std::pow( da/a,2 ) + std::pow( db/b,2 ) );
         int n = g_fracimprov[i]->GetN();
         g_fracimprov[i]   ->SetPoint( n, E, f);
         g_fracimprov[i]   ->SetPointError(n, dE,dE,df,df);
