@@ -1982,7 +1982,7 @@ void LightPlots(){
     AddTextLine(t, text_x1, leg_y2, 3, buffer);
     */
     TPaveText* hd1 = MakeTextBox(text_x1, leg_y2, textSize, 3);
-    hd1->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+    hd1->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
     hd1->AddText("Cosmic Michel e^{+/-}");
     hd1->AddText(Form("%s",pmttag[ch].c_str()));
 //    hd1->AddText(Form("%i Events",(int)hc2PE_prompt[0][ch]->GetEntries() ) );
@@ -2038,7 +2038,7 @@ void LightPlots(){
     lDataMC[ch][index] ->Draw();
     
     TPaveText* hd2 = MakeTextBox(text_x1, leg_y2, textSize, 3);
-    hd2->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+    hd2->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
     hd2->AddText("Cosmic Michel e^{+/-}");
     hd2->AddText(Form("%s",pmttag[ch].c_str()));
 //    sprintf(buffer,"%s: %s",runtag.c_str(),pmttag[ch].c_str()); header[ch]->AddText(buffer);
@@ -2172,7 +2172,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   hQ[1] ->DrawCopy("sameaxis"); // redraw axis
   
   TPaveText* ptq = MakeTextBox(mar_l + 0.02, leg_y2, textSize, 2);
-  ptq->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  ptq->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
   ptq->AddText("Cosmic Michel e^{+/-}");
   ptq  ->Draw();
 
@@ -2220,7 +2220,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   hL[1] ->DrawCopy("sameaxis"); // redraw axis
   
   TPaveText* ptl = MakeTextBox(mar_l + 0.02, leg_y2, textSize, 2);
-  ptl->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  ptl->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
   ptl->AddText("Cosmic Michel e^{+/-}");
   //ptl ->AddText(Form("%s Dataset",runtag.c_str()));
   ptl  ->Draw();
@@ -2277,7 +2277,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   hTrue_EnergyDepTrk->DrawCopy("hist same");
 
   TPaveText* headTrk = MakeTextBox(leg_x1, leg_y2, textSize, 4);
-  headTrk->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  headTrk->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
   //headTrk ->AddText(Form("%i Events",(int)hEnergyTrk[0]->GetEntries()));
   headTrk->AddText("Cosmic Michel e^{+/-}");
   headTrk ->AddText("Q-only ion. trk energy")->SetTextColor(kBlue);
@@ -2389,7 +2389,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   hTrue_EnergyDep->DrawCopy("hist same");
   
   TPaveText* hdr1 = MakeTextBox(leg_x1, leg_y2, textSize, 4);
-  hdr1->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  hdr1->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
   hdr1->AddText("Cosmic Michel e^{+/-}");
   //hdr1 ->AddText(Form("%s Dataset",runtag.c_str()));
   //hdr1 ->AddText(Form("%i Events",(int)hEnergyQ[0]->GetEntries()));
@@ -2429,7 +2429,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   hTrue_EnergyDep->DrawCopy("hist same");
   
   TPaveText* hdr2 = MakeTextBox(leg_x1, leg_y2, textSize, 4);
-  hdr2->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  hdr2->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
   hdr2->AddText("Cosmic Michel e^{+/-}");
   //hdr2 ->AddText(Form("%i Events",(int)hEnergyQL[0]->GetEntries()));
   hdr2 ->AddText("Combined Q+L")->SetTextColor(kMagenta+2);
@@ -2502,7 +2502,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   */
   
   TPaveText* b3_hd1 = MakeTextBox(0.17, 0.88, textSize, 3);
-  b3_hd1->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  b3_hd1->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
   b3_hd1->AddText("Cosmic Michel e^{+/-}");
   b3_hd1->AddText("Q-only")->SetTextColor(kBlue);
   b3_hd1 ->Draw();
@@ -2572,7 +2572,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   b3_leg3 ->Draw();
   */
   TPaveText* b3_hd2 = MakeTextBox(0.17, 0.88, textSize, 3);
-  b3_hd2->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  b3_hd2->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
   b3_hd2->AddText("Cosmic Michel e^{+/-}");
   b3_hd2->AddText("Q+L")->SetTextColor(kMagenta+2);
   b3_hd2 ->Draw();
@@ -2610,7 +2610,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   b3_leg2 ->Draw();
   */
   TPaveText* b3_hd3 = MakeTextBox(0.17, 0.88, textSize, 3);
-  b3_hd3->AddText(Form("#bf{LArIAT %s}",runtag.c_str());
+  b3_hd3->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
   b3_hd3->AddText("Cosmic Michel e^{+/-}");
   b3_hd3->AddText("Q+L (likelihood)")->SetTextColor(kGreen+2);
   b3_hd3 ->Draw();
@@ -3272,7 +3272,7 @@ void EnergyPlots(bool doResolutionSlices = false){
 
     // Isolated electrons trk nominal
     ResolutionSliceLoop(
-      hEvsRes_E_Trk, Emin, Emax, 10, 1.,
+      hEvsRes_E_Trk, Emin, 42.5, 8, 1.,
       true, "EQ_Trk_e_nom", "Q-only Energy (electron ion.)",3,3,-0.8,0.8,
       0, 0.33, false,
         Emin, 42.5,
@@ -3421,7 +3421,7 @@ void EnergyPlots(bool doResolutionSlices = false){
         if( i_ly == 2 ) {
          
           ResolutionSliceLoop(
-            hEvsRes_E_Trk, Emin, Emax, 10, 1.,
+            hEvsRes_E_Trk, 5, 42.5, 10, 1.,
             false, Form("Trk_e_sn%lu_ly%lu",i_sn, i_ly), "Electron Track Energy",3,3,-1.2,1.2,
             0, 0.33, false,
             Emin, 42.5,
@@ -7512,119 +7512,108 @@ void ResolutionSliceLoop(
     <<"\n"
     <<"-----------------------------------------------------------------------------------\n"
     <<"Fitting energy slice from "<<nbins<<" bins, <E> = "<<E<<" MeV ("<<nentries<<" entries, RMS = "<<rms<<")\n";
-  
-    // send projection to all-purpose gaussian fitting routine
-    MultiGausFit( h_tmp, &f2g, &fbg, mode, param); 
-
-    // chi2
-    float chi2      = f2g.GetChisquare()/(f2g.GetNDF()-1);
-    
-    // Gaussian fit sigma
-    float sig       = f2g.GetParameter(2)*100.;
-    float sig_err   = f2g.GetParError(2)*100.;
-    float sig_err_l = sig_err;
-    float sig_err_u = sig_err;
-    float sigRMS    = rms*100.;
-
-    // incorporate the difference between RMS and sigma 
-    // into the sigma error ("hybrid" approach)
-    if( useHybridRes ) {
-      
-      float sig0    = sig;
-
-      // on very rare occassions the fit returns an abnormally high error. If the fit error
-      // is *larger* than the fit-RMS difference, something clearly went wrong so redefine 
-      // the error bars
-      // sig_err_u = std::sqrt( std::pow(sig_err,2) + std::pow( (sigRMS - sig), 2) );
-      //if( sig_err > sigRMS - sig  ) {
-      //  sig_err_u = fabs(double(sigRMS-sig));
-      //  sig_err_l = fabs(double(sigRMS-sig));
-      //} 
-      // inflate one error bar based on RMS
-      //else if( sigRMS >= sig ) { 
-      //  sig_err_u = std::sqrt( std::pow(sig_err,2) + std::pow( (sigRMS - sig), 2) );
-      //} else {
-      //  sig_err_l = std::sqrt( std::pow(sig_err,2) + std::pow( (sig - sigRMS), 2) );
-      //}
-       
-      // set resolution to be the midpoint between the 
-      // fitted Gaussian at the peak and the overall RMS.
-      // The new error on this resolution will be a quadrature
-      // sum of the original sigma error and half the difference
-      // between sigma and RMS
-      /*
-      sig     = 0.5*(sig + sigRMS);
-      sig_err = std::sqrt( std::pow( sig_err,2 ) + std::pow( 0.5*(sigRMS-sig0), 2 ) );
-      sig_err_l = sig_err;
-      sig_err_u = sig_err;    
-      */
-      
-      // weighting based on chi^2 of fit
-      float w_sig = 1.;
-      float w_rms = 1.;
-      if( fHybridRes_UseChisquareWeighting ) 
-        w_rms = std::sqrt(chi2);
-      
-      float W = w_sig + w_rms;
-      float min = std::min(sig,sigRMS);
-      float max = std::max(sig,sigRMS);
-      
-      sig      = (w_sig*sig + w_rms*sigRMS)/(w_sig+w_rms);
-      sig_err_l = std::sqrt( std::pow((w_sig/W)*sig_err,2) + std::pow(sig-min,2) );
-      sig_err_u = std::sqrt( std::pow((w_sig/W)*sig_err,2) + std::pow(sig-max,2) );
-
-      
-    } 
-    
-
-    // add points to all the TGraphs
-    if( ( Emin_gr < 0 || E >= Emin_gr ) && ( Emax_gr < 0 || E <= Emax_gr )) {
-      std::cout<<"  Setting point on sigma graph:   "<<sig<<" (+ "<<sig_err_u<<" - "<<sig_err_l<<")\n";
-      std::cout<<"  Setting point on RMS graph:     "<<sigRMS<<"\n";
-      std::cout<<"  slice energy            "<<E<<" +/- "<<Eerr<<"\n";
-      gr      ->SetPoint      (gr->GetN(),    E, sig);
-      gr      ->SetPointError (gr->GetN()-1,  Eerr, Eerr, sig_err_l, sig_err_u);
-      gr_rms  ->SetPoint      (gr_rms->GetN(),E, sigRMS);
-      gr_rms  ->SetPointError (gr_rms->GetN()-1, Eerr, Eerr, 0., 0.);
+ 
+    if( nentries > 10 ) {
      
-      std::cout<<"  saving function\n"; 
-      // save the fit function   
-      fvFunc.push_back(f2g);
-    }
+      // send projection to all-purpose gaussian fitting routine
+      MultiGausFit( h_tmp, &f2g, &fbg, mode, param); 
+
+      // chi2
+      float chi2      = f2g.GetChisquare()/(f2g.GetNDF()-1);
+    
+      // Gaussian fit sigma
+      float sig       = f2g.GetParameter(2)*100.;
+      float sig_err   = f2g.GetParError(2)*100.;
+      float sig_err_l = sig_err;
+      float sig_err_u = sig_err;
+      float sigRMS    = rms*100.;
+
+      // incorporate the difference between RMS and sigma 
+      // into the sigma error ("hybrid" approach)
+      if( useHybridRes ) {
+      
+        float sig0    = sig;
+
+        // set resolution to be the midpoint between the 
+        // fitted Gaussian at the peak and the overall RMS.
+        // The new error on this resolution will be a quadrature
+        // sum of the original sigma error and half the difference
+        // between sigma and RMS
+        /*
+        sig     = 0.5*(sig + sigRMS);
+        sig_err = std::sqrt( std::pow( sig_err,2 ) + std::pow( 0.5*(sigRMS-sig0), 2 ) );
+        sig_err_l = sig_err;
+        sig_err_u = sig_err;    
+        */
+        
+        // weighting based on chi^2 of fit
+        float w_sig = 1.;
+        float w_rms = 1.;
+        if( fHybridRes_UseChisquareWeighting ) 
+          w_rms = std::sqrt(chi2);
+        
+        float W = w_sig + w_rms;
+        float min = std::min(sig,sigRMS);
+        float max = std::max(sig,sigRMS);
+        
+        sig      = (w_sig*sig + w_rms*sigRMS)/(w_sig+w_rms);
+        sig_err_l = std::sqrt( std::pow((w_sig/W)*sig_err,2) + std::pow(sig-min,2) );
+        sig_err_u = std::sqrt( std::pow((w_sig/W)*sig_err,2) + std::pow(sig-max,2) );
+
+      
+      } 
+    
+
+      // add points to all the TGraphs
+      if( ( Emin_gr < 0 || E >= Emin_gr ) && ( Emax_gr < 0 || E <= Emax_gr )) {
+        std::cout<<"  Setting point on sigma graph:   "<<sig<<" (+ "<<sig_err_u<<" - "<<sig_err_l<<")\n";
+        std::cout<<"  Setting point on RMS graph:     "<<sigRMS<<"\n";
+        std::cout<<"  slice energy            "<<E<<" +/- "<<Eerr<<"\n";
+        gr      ->SetPoint      (gr->GetN(),    E, sig);
+        gr      ->SetPointError (gr->GetN()-1,  Eerr, Eerr, sig_err_l, sig_err_u);
+        gr_rms  ->SetPoint      (gr_rms->GetN(),E, sigRMS);
+        gr_rms  ->SetPointError (gr_rms->GetN()-1, Eerr, Eerr, 0., 0.);
+     
+        std::cout<<"  saving function\n"; 
+        // save the fit function   
+        fvFunc.push_back(f2g);
+      }
  
   
-    // plot it in the array
-    if( makeFitArray && i < nx*ny ) {
-      std::cout<<"  Preparing to plot\n";
-      float x1 = h_tmp->GetXaxis()->GetXmin();
-      float x2 = h_tmp->GetXaxis()->GetXmax();
-      if( xmin != xmax && xmax > xmin ) {
-        x1 = xmin;
-        x2 = xmax;
-      }
-      cArray->cd(i+1);
-      gPad->SetMargin(0.10,0.10,0.15,0.10);
-      FormatAxes(h_tmp, axts, axls, 1.0, 1.0);
-      h_tmp->GetXaxis()->SetNdivisions(505);
-      h_tmp->SetTitle(Form("%s: %4.1f +/- %4.1f MeV",tag.c_str(),E,dE/2.));
-      h_tmp->SetTitleSize(0.06);
-      h_tmp->GetXaxis()->SetTitle(h2d->GetYaxis()->GetTitle());
-      h_tmp->GetXaxis()->SetRangeUser(xmin,xmax);
-      h_tmp->DrawCopy();
-      if( fbg.GetParameter(0) ) {
-        std::cout<<"  Background gaus has N = "<<fbg.GetParameter(0)<<" --> plotting!\n";
-        fbg.SetRange( x1, x2);
-        fbg.DrawCopy("LSAME");
-      }
-      gStyle->SetOptStat(1110);
-      gPad->Update();
-      gPad->SetEditable(false);
+      // plot it in the array
+      if( makeFitArray && i < nx*ny ) {
+        std::cout<<"  Preparing to plot\n";
+        float x1 = h_tmp->GetXaxis()->GetXmin();
+        float x2 = h_tmp->GetXaxis()->GetXmax();
+        if( xmin != xmax && xmax > xmin ) {
+          x1 = xmin;
+          x2 = xmax;
+        }
+        cArray->cd(i+1);
+        gPad->SetMargin(0.10,0.10,0.15,0.10);
+        FormatAxes(h_tmp, axts, axls, 1.0, 1.0);
+        h_tmp->GetXaxis()->SetNdivisions(505);
+        h_tmp->SetTitle(Form("%s: %4.1f +/- %4.1f MeV",tag.c_str(),E,dE/2.));
+        h_tmp->SetTitleSize(0.06);
+        h_tmp->GetXaxis()->SetTitle(h2d->GetYaxis()->GetTitle());
+        h_tmp->GetXaxis()->SetRangeUser(xmin,xmax);
+        h_tmp->DrawCopy();
+        if( fbg.GetParameter(0) ) {
+          std::cout<<"  Background gaus has N = "<<fbg.GetParameter(0)<<" --> plotting!\n";
+          fbg.SetRange( x1, x2);
+          fbg.DrawCopy("LSAME");
+        }
+        gStyle->SetOptStat(1110);
+        gPad->Update();
+        gPad->SetEditable(false);
       
-      cdefault->cd();
+        cdefault->cd();
 
-    }
+      }// done plotting in array
+
+    }// end check for nentries
   
- }// done looping through all slices 
+  }// done looping through all slices 
   
   cdefault->cd();
 
