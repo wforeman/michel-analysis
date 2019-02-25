@@ -100,6 +100,7 @@ TH1D* hTrue_NContainShwr;
 
 // Energy spectra
 TH1D* hEnergyTrk[2];
+//TH1D* hEnergyTrkErr;
 TH1D* hEnergyQ[2];
 TH1D* hEnergyQ_2R[2];
 TH1D* hEnergyQL[2];
@@ -863,6 +864,7 @@ TPaveText* MakeTextBox(float x, float y, float textSize, float numLines, float w
   pt->SetTextSize(textSize);
   pt->SetTextFont(42);
   pt->SetTextAlign(12);
+  pt->SetMargin(0);
   return pt;
 }
 
@@ -870,6 +872,12 @@ TPaveText* MakeTextBox(float x, float y, float textSize, float numLines ){
   return MakeTextBox(x,y,textSize,numLines,0.4);
 }
 
+void UpdateTPaveSize(TPaveText* pt){
+  int nlines = pt->GetListOfLines()->GetSize();
+  if( !nlines ) return;
+  double line_height = pt->GetTextSize();
+  pt->SetY1( pt->GetY2() - nlines*line_height);
+}
 
 TLegend* MakeLegend(float x1, float y2, float textSize, float numLines, float width){
     TLegend *leg = new TLegend(x1, y2-numLines*textSize, x1+width, y2 );

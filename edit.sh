@@ -1,1 +1,1 @@
-vim -p AnaMichel.cxx anamichel.h
+mvim -p AnaMichel.cxx anamichel.h

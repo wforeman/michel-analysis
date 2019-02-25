@@ -1,16 +1,18 @@
 #include "anamichel.h"
 
-bool fDoLikelihoodFit = true;
-bool fDoBareElectrons = true;
-bool fSavePlots       = true;
-int  fRunMode         = 2;
+bool  fTestMode        = true;
+
+bool  fDoLikelihoodFit  = true;
+bool  fDoBareElectrons  = true;
+bool  fSavePlots        = true;
+int   fRunMode          = 2;
+int   fMaxMCEvts        = -200000;
+int   fMaxMCEvts_IsoEl  = -100000;
 
 bool fHybridRes_UseChisquareWeighting = true;
 
 float fChargeSignFilter = 0; // allow only electrons (-1), positrons (1)
 
-int fMaxMCEvents = -200000;
-int fMaxMCEvents_BareElShowers = -100000;
 
 float fChargeRes;
 float fPhelRes;
@@ -116,6 +118,13 @@ void AnaMichel(){
 
   gROOT->Reset();
   
+  if( fTestMode ) {
+    fDoLikelihoodFit  = false;
+    fDoBareElectrons  = true;
+    fMaxMCEvts        = 400000;
+    fMaxMCEvts_IsoEl  = 100000;
+  }
+
   fFastRatio          = fFastRatioNom; 
   fLArDensity               = 1.370; // This is what LArSoft uses (ave Run II)
   fEField                   = 0.484;
@@ -142,15 +151,12 @@ void AnaMichel(){
   
   // phasing out these cuts...
   fMinProjDist              = -20.;
-  fMaxExtraHits             = 9999;
   fMinShowerFrac            = 0.0;
   fMaxCovAtBnd              = -0.8;
   fMinFracMuHitsLinear      = 0.0; // 0.5
 
  
   fPE_Require3DShower=false;
-  fRequire3DMuEndpt=false;
-  fOptimizeTarget = "both";
   fSetMinimizer = "simplex";
   pmttag[0] ="HMM PMT";
   pmttag[1] ="ETL PMT";
@@ -243,7 +249,7 @@ void Init(int mode) {
   }
 
   if( fRunMode == 2 ) {
-    runtag                    = "Run II";
+    runtag                    = "Run IIB";
     fUsePmt[0]                = true;
     fUsePmt[1]                = true;
     fRunStart                 = 9438;
@@ -724,6 +730,8 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
   
   hEnergyTrk[0]         = new TH1D("EnergyTrk_Data","Charge-based Michel Ionization Energy;Reconstructed ionization energy [MeV];Events / 2 MeV",E_bins,0,E_x2);
   hEnergyTrk[1]         = (TH1D*)hEnergyTrk[0]->Clone("EnergyTrk_MC");
+  //hEnergyTrkErr         = (TH1D*)hEnergyTrk[0]->Clone("EnergyTrk_MC_Err");
+  
   hEnergyQ[0]           = new TH1D("EnergyQ_Data","E_{Q} = ( Q / R ) #times W_{ion} (assume uniform R);Reconstructed shower energy [MeV];Events / 2 MeV",E_bins, 0, E_x2);
   hEnergyQ[1]           = (TH1D*)hEnergyQ[0]     ->Clone("EnergyQ_MC");
   hEnergyQ_2R[0]           = new TH1D("EnergyQ_2R_Data","E_{Q} = ( Q_{e} / R_{e} + Q_{i} / R_{i} ) #times W_{ion} (non-uniform R);Reconstructed shower energy [MeV];Events / 2 MeV",E_bins, 0, E_x2);
@@ -838,7 +846,7 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
 
 
   // Preliminary loop over data and MC trees
-  fMaxMCEvents = -200000; //-1.;
+  //fMaxMCEvts = -200000; //-1.;
   std::cout<<"Looping over data tree...\n";
   Loop(0);
   std::cout<<"Looping over MC tree...\n";
@@ -1023,7 +1031,7 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
   // ====================================================
   // begin loop
   int kMax = (int)tree->GetEntries();
-  if( isMC && fMaxMCEvents > 0 && kMax > fMaxMCEvents ) kMax = fMaxMCEvents;
+  if( isMC && fMaxMCEvts > 0 && kMax > fMaxMCEvts ) kMax = fMaxMCEvts;
   for(int i=0; i<kMax; i++){
   
     if( (i % 10000) == 0 ) std::cout<<"...tree entry "<<i<<"\n";
@@ -1286,118 +1294,118 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
               fMuClusterSize >= fMinMuClusterSize ) {
             nEvt_Shwr2D_ClusterSize++;
             
-            // no unclustered hits along edge of cluster
-            if( 1 ) { //fExtraHits <= fMaxExtraHits ) {
-              nEvt_Shwr2D_ExtraHits++;
+                              
+            // Bragg peak slope
+            if( fMinBraggSlope < 0 || fBraggSlope > fMinBraggSlope ) {
+              nEvt_Shwr2D_Slope++;
             
-//              h_evtCut_BraggSlope[type]->Fill(fBraggSlope);
-                              
-              // Bragg peak slope
-              if( fMinBraggSlope < 0 || fBraggSlope > fMinBraggSlope ) {
-                nEvt_Shwr2D_Slope++;
+              h_evtCut_MuLinearity[type]->Fill(fMuAveLinearity);
+
+              // muon linearity
+              if( fMuAveLinearity > fMinMuLinearity &&
+                  fFracMuHitsLinear > fMinFracMuHitsLinear ) {
+                nEvt_Shwr2D_MuLinearity++;
               
-                h_evtCut_MuLinearity[type]->Fill(fMuAveLinearity);
+                h_evtCut_MuDir[type]->Fill( fMuClusterHitsEndFit );
 
-                // muon linearity
-                if( fMuAveLinearity > fMinMuLinearity &&
-                    fFracMuHitsLinear > fMinFracMuHitsLinear ) {
-                  nEvt_Shwr2D_MuLinearity++;
+                // muon terminal direction fit
+                if( fMuClusterHitsEndFit >= fMinMuClusterHitsEndFit ) {
+                  nEvt_Shwr2D_MuDir++;
                 
-                  h_evtCut_MuDir[type]->Fill( fMuClusterHitsEndFit );
+                  h_evtCut_DecayAngle[type]->Fill( fDecayAngle2D );
 
-                  // muon terminal direction fit
-                  if( fMuClusterHitsEndFit >= fMinMuClusterHitsEndFit ) {
-                    nEvt_Shwr2D_MuDir++;
-                  
-                    h_evtCut_DecayAngle[type]->Fill( fDecayAngle2D );
-
-                    // decay angle cut (req on *either* plane)
-                    if( (fDecayAngle2D > fMinDecayAngle2D && 
-                         fDecayAngle2D < fMaxDecayAngle2D)
-                        ) {
-                      nEvt_Shwr2D_DecayAngle++;
-                      
-                      if( fElShowerSize >= fElClusterSize ) 
-                      h_evtCut_ShowerSize[type]->Fill( fElShowerSize );
+                  // decay angle cut (req on *either* plane)
+                  if( (fDecayAngle2D > fMinDecayAngle2D && 
+                       fDecayAngle2D < fMaxDecayAngle2D)
+                      ) {
+                    nEvt_Shwr2D_DecayAngle++;
                     
-                      // shower size cuts
-                      if( fElShowerSize >= fMinElShowerSize && fElShowerSize <= fMaxElShowerSize ) {
-                        nEvt_Shwr2D_ShowerSize++;
-                     
-                        // shower completeness frac (skip if the total 
-                        if( fElShowerFrac > fMinShowerFrac || fElShowerSize*(1./fElShowerFrac-1.) < 10 ) {
-                          nEvt_Shwr2D_ShowerFrac++; 
-                          
-                          goodShower2D = true;
+                    if( fElShowerSize >= fElClusterSize ) 
+                    h_evtCut_ShowerSize[type]->Fill( fElShowerSize );
+                  
+                    // shower size cuts
+                    if( fElShowerSize >= fMinElShowerSize && fElShowerSize <= fMaxElShowerSize ) {
+                      nEvt_Shwr2D_ShowerSize++;
+                   
+                      // shower completeness frac (skip if the total 
+                      if( fElShowerFrac > fMinShowerFrac || fElShowerSize*(1./fElShowerFrac-1.) < 10 ) {
+                        nEvt_Shwr2D_ShowerFrac++; 
                         
-                        // ---------------------------------------
-                        // 3D shower boolean  
-                        if( !fRequire3DMuEndpt || ( fMuEnd3D_X > 0 ) ) {
-                          if( fMuEnd3D_X > 0 ) nEvt_3DMuEnd++;
-                        
-                          // shower on pl0 (boolean set earlier) 
-                          if( shower2D_Pl0 ) {
-                            nEvt_Shwr3D_ShowersOnBothPlanes++;
-                                
-                              h_evtCut_NumPts3D[type]->Fill( fNumPts3D);
-                          
-                              // num 3D pts
-                              if( fNumPts3D >= fMinNumPts3D && fElShowerVis > 0 ) {
-                                nEvt_Shwr3D_Npts++;
-                                 
-                                fFracHits3D = float(fNumPts3D)/fElShowerSize; 
-                                h_evtCut_FracPts3D[type]->Fill( fFracHits3D );
-
-                                // fraction of hits used
-                                if( fFracHits3D > fMinFracHits3D ) {
-                                  
-                                  nEvt_Shwr3D_FracHits3D++;
-          
-                                  hElShowerCentroid_X[type]->Fill( fElShowerCentroid_X,fWgt );
-                                  hElShowerCentroid_Y[type]->Fill( fElShowerCentroid_Y,fWgt );
-                                  hElShowerCentroid_Z[type]->Fill( fElShowerCentroid_Z,fWgt );
-                                  hElShowerCentroid[type]->Fill( fElShowerCentroid_X, fElShowerCentroid_Y, fElShowerCentroid_Z, fWgt);
-
-                                  // Shower centroid cut
-                                  if( fElShowerCentroid_X > fFidMarginX && fElShowerCentroid_X < 47.5-fFidMarginX &&
-                                      fElShowerCentroid_Y > -20.+fFidMarginY && fElShowerCentroid_Y < 20.-fFidMarginY &&
-                                      fElShowerCentroid_Z > fFidMarginZ && fElShowerCentroid_Z < 90.-fFidMarginZ ) {
-                                    nEvt_Shwr3D_Centroid++;
+                        goodShower2D = true;
+                      
+                      // ---------------------------------------
+                      // 3D shower boolean  
+                      if( !fRequire3DMuEndpt || ( fMuEnd3D_X > 0 ) ) {
+                        if( fMuEnd3D_X > 0 ) nEvt_3DMuEnd++;
+                      
+                        // shower on pl0 (boolean set earlier) 
+                        if( shower2D_Pl0 ) {
+                          nEvt_Shwr3D_ShowersOnBothPlanes++;
                               
-                                    //h_evtCut_ProjDist[type]->Fill( fProjDist3DToWires );
+                            h_evtCut_NumPts3D[type]->Fill( fNumPts3D);
+                        
+                            // num 3D pts
+                            if( fNumPts3D >= fMinNumPts3D && fElShowerVis > 0 ) {
+                              nEvt_Shwr3D_Npts++;
+                               
+                              fFracHits3D = float(fNumPts3D)/fElShowerSize; 
+                              h_evtCut_FracPts3D[type]->Fill( fFracHits3D );
 
-                                  
-                                    // Electron direction cuts (to eliminate events
-                                    // where a large portion of charge might be deposited
-                                    // on the other side of the wireplanes, or where
-                                    // charge may intersect and interfere with PMTs)
-                                    if( fProjDist3DToWires < 0 || fProjDist3DToWires > fMinProjDist ) {
-                                   
-                                      nEvt_Shwr3D_Direction++; 
-                                      goodShower3D=true;
+                              // fraction of hits used
+                              if( fFracHits3D > fMinFracHits3D ) {
+                                
+                                nEvt_Shwr3D_FracHits3D++;
+          
+                                hElShowerCentroid_X[type]->Fill( fElShowerCentroid_X,fWgt );
+                                hElShowerCentroid_Y[type]->Fill( fElShowerCentroid_Y,fWgt );
+                                hElShowerCentroid_Z[type]->Fill( fElShowerCentroid_Z,fWgt );
+                                hElShowerCentroid[type]->Fill( 
+                                  fElShowerCentroid_X, 
+                                  fElShowerCentroid_Y, 
+                                  fElShowerCentroid_Z, fWgt);
 
-                                      // decay time cut
-                                      if( fDecayTime > fdTcut ) {
-                                        nEvt_dTcut++;
-                                        goodShower3D_dTcut=true;
-                                        h_evtCut_MuPE_prompt[type][0]->Fill( fMuPE_prompt[0] );
-                                        h_evtCut_MuPE_prompt[type][1]->Fill( fMuPE_prompt[1] );
-                                      }//<-- dTcut
+                                // Shower centroid cut
+                                if( fElShowerCentroid_X > fFidMarginX &&
+                                    fElShowerCentroid_X < 47.5-fFidMarginX &&
+                                    fElShowerCentroid_Y > -20.+fFidMarginY && 
+                                    fElShowerCentroid_Y < 20.-fFidMarginY &&
+                                    fElShowerCentroid_Z > fFidMarginZ && 
+                                    fElShowerCentroid_Z < 90.-fFidMarginZ ) {
+                                  nEvt_Shwr3D_Centroid++;
+                            
+                                  //h_evtCut_ProjDist[type]->Fill( fProjDist3DToWires );
 
-                                    }// shower dir. cut
-                                  }/// centroid fid cut
-                                }//<-- frac 3D pts
-                              }//<-- num 3D pts
-                            }//<-- showers on both planes
-                          }//<-- (3D muon endpoint -- optional)
-                          // -----------------------------------------
-                        }//<-- shower frac 
-                      }//<-- shower size
-                    }//<-- decay angle cut
-                  }//<-- mu dir
-                }//<-- mu linearity
-              }//<-- Bragg peak slope
-            }//<-- extra hits
+                                
+                                  // Electron direction cuts (to eliminate events
+                                  // where a large portion of charge might be deposited
+                                  // on the other side of the wireplanes, or where
+                                  // charge may intersect and interfere with PMTs)
+                                  if( fProjDist3DToWires < 0 || fProjDist3DToWires > fMinProjDist ) {
+                                 
+                                    nEvt_Shwr3D_Direction++; 
+                                    goodShower3D=true;
+
+                                    // decay time cut
+                                    if( fDecayTime > fdTcut ) {
+                                      nEvt_dTcut++;
+                                      goodShower3D_dTcut=true;
+                                      h_evtCut_MuPE_prompt[type][0]->Fill( fMuPE_prompt[0] );
+                                      h_evtCut_MuPE_prompt[type][1]->Fill( fMuPE_prompt[1] );
+                                    }//<-- dTcut
+
+                                  }// shower dir. cut
+                                }/// centroid fid cut
+                              }//<-- frac 3D pts
+                            }//<-- num 3D pts
+                          }//<-- showers on both planes
+                        }//<-- (3D muon endpoint -- optional)
+                        // -----------------------------------------
+                      }//<-- shower frac 
+                    }//<-- shower size
+                  }//<-- decay angle cut
+                }//<-- mu dir
+              }//<-- mu linearity
+            }//<-- Bragg peak slope
           }//<-- clstr size
         }//<-- clstr bnd found
       }//<-- opID mu prompt cut
@@ -1706,7 +1714,7 @@ void ScaleMC(){
   float promptScale[2]        = {1., 1.};
   float totalScale[2]         = {1., 1.};
   for(int ch=0; ch<2; ch++){
-    if( hPE_prompt[0][ch]->GetEntries() <= 0 || hPE_total[0][ch] <= 0 ) continue;
+    //if( hPE_prompt[0][ch]->GetEntries() <= 0 || hPE_total[0][ch] <= 0 ) continue;
     if( hPE_prompt[1][ch]->Integral() > 0 ) promptScale[ch] = hPE_prompt[0][ch]->Integral()/hPE_prompt[1][ch]->Integral();
     if( hPE_total[1][ch]->Integral() > 0 ) totalScale[ch] = hPE_total[0][ch]->Integral()/hPE_total[1][ch]->Integral();
     hPE_prompt_pretrigMC[ch]  ->Scale(promptScale[ch]);
@@ -1982,7 +1990,7 @@ void LightPlots(){
     AddTextLine(t, text_x1, leg_y2, 3, buffer);
     */
     TPaveText* hd1 = MakeTextBox(text_x1, leg_y2, textSize, 3);
-    hd1->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
+    hd1->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
     hd1->AddText("Cosmic Michel e^{+/-}");
     hd1->AddText(Form("%s",pmttag[ch].c_str()));
 //    hd1->AddText(Form("%i Events",(int)hc2PE_prompt[0][ch]->GetEntries() ) );
@@ -2038,7 +2046,7 @@ void LightPlots(){
     lDataMC[ch][index] ->Draw();
     
     TPaveText* hd2 = MakeTextBox(text_x1, leg_y2, textSize, 3);
-    hd2->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
+    hd2->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
     hd2->AddText("Cosmic Michel e^{+/-}");
     hd2->AddText(Form("%s",pmttag[ch].c_str()));
 //    sprintf(buffer,"%s: %s",runtag.c_str(),pmttag[ch].c_str()); header[ch]->AddText(buffer);
@@ -2172,7 +2180,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   hQ[1] ->DrawCopy("sameaxis"); // redraw axis
   
   TPaveText* ptq = MakeTextBox(mar_l + 0.02, leg_y2, textSize, 2);
-  ptq->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
+  ptq->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
   ptq->AddText("Cosmic Michel e^{+/-}");
   ptq  ->Draw();
 
@@ -2220,7 +2228,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   hL[1] ->DrawCopy("sameaxis"); // redraw axis
   
   TPaveText* ptl = MakeTextBox(mar_l + 0.02, leg_y2, textSize, 2);
-  ptl->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
+  ptl->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
   ptl->AddText("Cosmic Michel e^{+/-}");
   //ptl ->AddText(Form("%s Dataset",runtag.c_str()));
   ptl  ->Draw();
@@ -2250,50 +2258,68 @@ void EnergyPlots(bool doResolutionSlices = false){
   TCanvas* cEnergyTrk = new TCanvas("energyTrk","energyTrk",500,500);
   gPad->SetMargin(mar_l,mar_r,mar_b,mar_t);
   gStyle->SetOptStat(0);
+  
   hEnergyTrk[1]->SetTitle("");
   hEnergyTrk[1]->SetMaximum( 1.1*std::max(GetHistMax(hEnergyTrk[1]),GetHistMax(hEnergyTrk[0]) ) );
   hEnergyTrk[1]->SetMaximum( 1.1*std::max(float(hEnergyTrk[1]->GetMaximum()),GetHistMax(hTrue_EnergyDepTrk)) );
   hEnergyTrk[1]->SetStats(0);
-  hEnergyTrk[1] ->SetFillColor(kGray); //(kBlue-10);
-  hEnergyTrk[1] ->SetLineColor(kGray+2);
+  hEnergyTrk[1]->SetFillColor(kWhite);
+  hEnergyTrk[1]->SetLineColor(kBlack);
   FormatAxes(hEnergyTrk[1], axisTitleSize, axisLabelSize, 1.0, 1.5 );
   hEnergyTrk[1]->DrawCopy("hist");
-  
-  TH1D* hEnergyTrkMCErr = (TH1D*)hEnergyTrk[1]->Clone("energyTrkMCErr");
+
+  TH1D* hEnergyTrkErr = (TH1D*)hEnergyTrk[1]->Clone("energyTrkMCErr");
+  //hEnergyTrkErr = (TH1D*)hEnergyTrk[1]->Clone("energyTrk_MC_Err");
+  hEnergyTrkErr->SetFillStyle(3001);
+  hEnergyTrkErr->SetFillColor(kGray+1);
+  hEnergyTrkErr->SetMarkerColor(kGray+1);
+  hEnergyTrkErr->SetLineWidth(0);
+  //hEnergyTrkMCErr->SetFillStyle(3001);
+  //hEnergyTrkMCErr->SetFillColor(kGray);
+  //hEnergyTrkMCErr->SetMarkerColor(kGray);
+  hEnergyTrkErr->DrawCopy("same E2");
+  hEnergyTrk[1]->DrawCopy("same hist");
+ 
+ /* 
   hEnergyTrkMCErr->SetFillStyle(3002);
   hEnergyTrkMCErr->SetFillColor(kGray+2);
   hEnergyTrkMCErr->SetMarkerColor(kGray+2);
+  hEnergyTrkMCErr->SetLineWidth(0);
+  //hEnergyTrkMCErr->SetFillStyle(3001);
+  //hEnergyTrkMCErr->SetFillColor(kGray);
+  //hEnergyTrkMCErr->SetMarkerColor(kGray);
   hEnergyTrkMCErr->DrawCopy("same E2");
-  
+  */
+
   hEnergyTrk[0] ->SetMarkerStyle(20);
   hEnergyTrk[0] ->SetMarkerSize(0.7);
   hEnergyTrk[0] ->SetLineColor(kBlue);
   hEnergyTrk[0] ->SetMarkerColor(kBlue);
   hEnergyTrk[0] ->DrawCopy("same P E X0");
-  hEnergyTrk[1] ->DrawCopy("sameaxis"); // redraw axis
+  hEnergyTrk[1] ->DrawCopy("same axis"); // redraw axis
 
   hTrue_EnergyDepTrk ->SetLineStyle(2);
   hTrue_EnergyDepTrk ->SetLineColor(kBlack);
   hTrue_EnergyDepTrk->DrawCopy("hist same");
 
   TPaveText* headTrk = MakeTextBox(leg_x1, leg_y2, textSize, 4);
-  headTrk->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
+  headTrk->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
   //headTrk ->AddText(Form("%i Events",(int)hEnergyTrk[0]->GetEntries()));
-  headTrk->AddText("Cosmic Michel e^{+/-}");
+  headTrk->AddText("Michel Electrons"); //e^{+/-}");
   headTrk ->AddText("Q-only ion. trk energy")->SetTextColor(kBlue);
   headTrk ->AddText("w/recomb. correction")->SetTextColor(kBlue);
   headTrk->Draw();
 
-  TPaveText* ptTrk  = MakeTextBox(leg_x1, leg_y2-4.*textSize - 0.02, textSize, 1);
+  TPaveText* ptTrk  = MakeTextBox(leg_x1, leg_y2-4.5*textSize - 0.02, textSize, 1);
   ptTrk   ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyTrk[0],hEnergyTrk[1])));
   //ptTrk   ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyTrk[0],hTrue_EnergyDepTrk)));
 //  ptTrk   ->AddText("Cuts:");
 //  ptTrk   ->AddText(Form("  #DeltaT > %3.1f #mus",fdTcut/1000.));
 //  ptTrk   ->AddText (Form("  3D shower (Npts #geq %1d)",fMinNumPts3D ));
   ptTrk   ->Draw();
-  TLegend* legTrk = MakeLegend(leg_x1+0.08, leg_y2 - 5.*textSize-0.07, textSize, 3);
+  TLegend* legTrk = MakeLegend(leg_x1+0.08, leg_y2 - 5.5*textSize-0.07, textSize, 3);
   legTrk  ->AddEntry(hTrue_EnergyDepTrk, "MC true #it{E}_{#it{dep}}^{#it{ion}}", "L");   
-  legTrk  ->AddEntry(hEnergyTrk[1], "MC reco", "LF");
+  legTrk  ->AddEntry(hEnergyTrk[1], "MC reco", "L");
   legTrk  ->AddEntry(hEnergyTrk[0], "Data", "LPE");
   legTrk  ->Draw();
   
@@ -2311,13 +2337,13 @@ void EnergyPlots(bool doResolutionSlices = false){
   // E_Q --------------------------
     // MC
     hEnergyQ[1]->SetFillColor(kGray);
-    hEnergyQ[1]->SetLineColor(kGray+2);
+    hEnergyQ[1]->SetLineColor(kBlack);
     FormatAxes(hEnergyQ[1], axisTitleSize, axisLabelSize, 1.0, 1.5);
     // MC error bars
-    TH1D* hEnergyQ_mcerr = (TH1D*)hEnergyQ[1]->Clone("enerygQ_mcerr");
+    TH1D* hEnergyQ_mcerr = (TH1D*)hEnergyQ[1]->Clone("energyQ_mcerr");
     hEnergyQ_mcerr->SetFillStyle(3002);
     hEnergyQ_mcerr->SetFillColor(kGray+2);
-    hEnergyQ_mcerr->SetMarkerColor(kGray+2);
+    hEnergyQ_mcerr->SetMarkerColor(kBlack);
     // Data
     hEnergyQ[0] ->SetMarkerStyle(20);
     hEnergyQ[0] ->SetMarkerSize(0.7);
@@ -2429,7 +2455,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   hTrue_EnergyDep->DrawCopy("hist same");
   
   TPaveText* hdr2 = MakeTextBox(leg_x1, leg_y2, textSize, 4);
-  hdr2->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
+  hdr2->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
   hdr2->AddText("Cosmic Michel e^{+/-}");
   //hdr2 ->AddText(Form("%i Events",(int)hEnergyQL[0]->GetEntries()));
   hdr2 ->AddText("Combined Q+L")->SetTextColor(kMagenta+2);
@@ -2502,7 +2528,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   */
   
   TPaveText* b3_hd1 = MakeTextBox(0.17, 0.88, textSize, 3);
-  b3_hd1->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
+  b3_hd1->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
   b3_hd1->AddText("Cosmic Michel e^{+/-}");
   b3_hd1->AddText("Q-only")->SetTextColor(kBlue);
   b3_hd1 ->Draw();
@@ -2572,7 +2598,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   b3_leg3 ->Draw();
   */
   TPaveText* b3_hd2 = MakeTextBox(0.17, 0.88, textSize, 3);
-  b3_hd2->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
+  b3_hd2->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
   b3_hd2->AddText("Cosmic Michel e^{+/-}");
   b3_hd2->AddText("Q+L")->SetTextColor(kMagenta+2);
   b3_hd2 ->Draw();
@@ -2610,7 +2636,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   b3_leg2 ->Draw();
   */
   TPaveText* b3_hd3 = MakeTextBox(0.17, 0.88, textSize, 3);
-  b3_hd3->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
+  b3_hd3->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
   b3_hd3->AddText("Cosmic Michel e^{+/-}");
   b3_hd3->AddText("Q+L (likelihood)")->SetTextColor(kGreen+2);
   b3_hd3 ->Draw();
@@ -2647,8 +2673,8 @@ void EnergyPlots(bool doResolutionSlices = false){
   <<"===================================================\n"
   <<"Looking at Q and L resolutions for Michel events...\n";
   SetTrigEffParams(0);
-  fMaxMCEvents = -50000; //50000; //-1; //100000; //-1;
-  //fMaxMCEvents = -1;
+  //fMaxMCEvts = -50000; //50000; //-1; //100000; //-1;
+  //fMaxMCEvts = -1;
   RepMC();
     
   TF1* fResFit = new TF1("resFit","sqrt([0]^2/x + [1]^2)",1.,100.);
@@ -2685,7 +2711,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower Q
     ResolutionSliceLoop(
       hEvs_Q, Emin, Emax, 9, 1.,
-      true, "Q", "Shower Q",3,3,0.,2500e3,//-9,-9,
+      true, "Q", "Michel Q",3,3,0.,2500e3,//-9,-9,
       1,15., false,
       -9, -9,
       gr_Qsig,
@@ -2695,7 +2721,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower L
     ResolutionSliceLoop(
       hEvs_L, Emin, Emax, 9, 1.,
-      true, "L", "Shower L",3,3,0.,2500e3,
+      true, "L", "Michel L",3,3,0.,2500e3,
       0,-0.10, false,
       -9, -9,
       gr_Lsig,
@@ -2708,10 +2734,10 @@ void EnergyPlots(bool doResolutionSlices = false){
   // for Q and L
   ParamDistOverlay(
     hEvs_Q, 7.5, 52.5, 9, 1., 0., 2500e3,
-    "overlays_Q", "Michel shower Q", 3, 3, fFuncP_Q);
+    "overlays_Q", "Michel Q", 3, 3, fFuncP_Q);
   ParamDistOverlay(
     hEvs_L, 7.5, 52.5, 9, 1., 0., 2500e3,
-    "overlays_L", "Michel shower L", 3, 3, fFuncP_L);
+    "overlays_L", "Michel L", 3, 3, fFuncP_L);
 
   // -------------------------------------------------------------
   // Q-FITS:
@@ -2891,8 +2917,8 @@ void EnergyPlots(bool doResolutionSlices = false){
     
     // Michel Trk
     ResolutionSliceLoop(
-      hEvsRes_E_Trk, Emin, Emax, 9, 1.,
-      false, "EQ_Trk", "Q-only Trk Energy",3,3,-1.2,1.2,
+      hEvsRes_E_Trk, 7.5, 52.5, 9, 1.,
+      false, "EQ_Trk", "Michel E_{Q}^{ion}",3,3,-1.2,1.2,
       0, 0.33, false,
       //1, 20, false,
       0, 47.5,
@@ -2902,7 +2928,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower E_Q
     ResolutionSliceLoop(
       hEvsRes_E_Q, Emin, Emax, 9, 1.,
-      true, "EQ", "Q-only Energy",3,3,-1.2,1.2,
+      true, "EQ", "Michel E_{Q}",3,3,-1.2,1.2,
       //1,-1, useHybridRes,
       0,0.33, useHybridRes,
       -9, -9,
@@ -2912,7 +2938,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower E_QL
     ResolutionSliceLoop(
       hEvsRes_E_QL, Emin, Emax, 9, 1.,
-      true, "EQL", "Q+L Energy",3,3,-1.2,1.2,
+      true, "EQL", "Michel E_{QL}",3,3,-1.2,1.2,
       //1,-1, useHybridRes,
       0,0.33, useHybridRes,
       -9, -9,
@@ -2922,7 +2948,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Michel shower E_QL log-likelihood
     ResolutionSliceLoop(
       hEvsRes_E_QL_LogL, Emin, Emax, 9, 1.,
-      true, "EQL_LogL", "Q+L Energy (likelihood)",3,3,-1.2,1.2,
+      true, "EQL_LogL", "Michel E_{QL}^{likelihood}",3,3,-1.2,1.2,
       0,0.33, useHybridRes,
       -9, -9,
       gr_sigma_QL_LogL,
@@ -2973,7 +2999,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     gStyle->SetGridColor(kGray);
 
 
-    gStyle->SetErrorX(0);
+    //gStyle->SetErrorX(0);
     auto mg = new TMultiGraph();
     mg->Add(gr_sigma_Q, "APL");
     mg->Add(gr_sigma_QL, "APL");
@@ -3003,7 +3029,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     legg  ->AddEntry(gr_rms_QL_LogL,"Q+L RMS (likelihood)","PL");
     legg  ->Draw("same");
     TPaveText* headd = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 2);
-    headd ->AddText("#bf{LArIAT Run II MC}");
+    headd ->AddText("#bf{LArIAT: Run IIB MC}");
     headd ->AddText("Michel e^{+/-}");
     //headd ->AddText(Form("#tau_{e} = %4.2f ms",0.83));
     //headd ->AddText(Form("#sigma_{PE} = %4.1f%%",hPERes->GetRMS()*100.));
@@ -3049,7 +3075,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     <<"\n###############################################################\n"
     <<"Resolution slices: bare electrons, nominal\n";
   
-    if( fMaxMCEvents_BareElShowers > 0 ) fMaxMCEvents = fMaxMCEvents_BareElShowers; 
+    if( fMaxMCEvts_IsoEl > 0 ) fMaxMCEvts = fMaxMCEvts_IsoEl; 
 
     // Make E_vs_Q and L 2D histograms more finely binned along Y:
     //int E_bins = 50;
@@ -3251,7 +3277,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     
       ResolutionSliceLoop(
         hEvs_Q, Emin, Emax, 10, 1.,
-        true, "Q_e_nom", "Shower Q",3,3,0.,2500e3,
+        true, "Q_e_nom", "Electron Q",3,3,0.,2500e3,
         0, -0.10, false,
         -9,-9,
         grEl_Qdist_sig_nom,
@@ -3259,7 +3285,7 @@ void EnergyPlots(bool doResolutionSlices = false){
         grEl_Qdist_mean_nom);
       ResolutionSliceLoop(
         hEvs_L, Emin, Emax, 10, 1.,
-        true, "L_e_nom", "Shower L",3,3,0.,2500e3,
+        true, "L_e_nom", "Electron L",3,3,0.,2500e3,
         0, -0.10, false,
         -9,-9,
         grEl_Ldist_sig_nom,
@@ -3272,8 +3298,8 @@ void EnergyPlots(bool doResolutionSlices = false){
 
     // Isolated electrons trk nominal
     ResolutionSliceLoop(
-      hEvsRes_E_Trk, Emin, 42.5, 8, 1.,
-      true, "EQ_Trk_e_nom", "Q-only Energy (electron ion.)",3,3,-0.8,0.8,
+      hEvsRes_E_Trk, 2.5, 42.5, 8, 1.,
+      true, "EQ_Trk_e_nom", "Electron E_{Q}^{ion}",4,2,-0.8,0.8,
       0, 0.33, false,
         Emin, 42.5,
       grEl_sig_Q_Trk_nom,
@@ -3282,7 +3308,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons shower E_Q nominal
     ResolutionSliceLoop(
       hEvsRes_E_Q, Emin, Emax, 10, 1.,
-      true, "EQ_e_nom", "Q-only Energy",3,3,-0.8,0.8,
+      true, "EQ_e_nom", "Electron E_{Q}",3,3,-0.8,0.8,
       0, FitThresh, useHybridRes,
         Emin, 42.5,
       grEl_sig_Q_nom,
@@ -3291,7 +3317,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons shower E_QL nominal
     ResolutionSliceLoop(
       hEvsRes_E_QL, Emin, Emax, 10, 1.,
-      true, "EQL_e_nom", "Q+L Energy",3,3,-0.8,0.8,
+      true, "EQL_e_nom", "Electron E_{QL}",3,3,-0.8,0.8,
       0, FitThresh, useHybridRes,
         Emin, 42.5,
       grEl_sig_QL_nom,
@@ -3300,7 +3326,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons shower E_QL LogL nominal
     ResolutionSliceLoop(
       hEvsRes_E_QL_LogL, Emin, Emax, 10, 1.,
-      true, "EQL_LogL_e_nom", "Q+L Energy (Log-L)",3,3,-0.8,0.8,
+      true, "EQL_LogL_e_nom", "Electron E_{QL}^{likelihood}",3,3,-0.8,0.8,
       0, FitThresh, useHybridRes,
         Emin, 42.5,
       grEl_sig_QL_LogL_nom,
@@ -3421,8 +3447,8 @@ void EnergyPlots(bool doResolutionSlices = false){
         if( i_ly == 2 ) {
          
           ResolutionSliceLoop(
-            hEvsRes_E_Trk, 5, 42.5, 10, 1.,
-            false, Form("Trk_e_sn%lu_ly%lu",i_sn, i_ly), "Electron Track Energy",3,3,-1.2,1.2,
+            hEvsRes_E_Trk, 2.5, 42.5, 8, 1.,
+            false, Form("Trk_e_sn%lu_ly%lu",i_sn, i_ly), "Electron E_{Q}^{ion}",4,2,-1.2,1.2,
             0, 0.33, false,
             Emin, 42.5,
             grEl_sig_Q_Trk_sn[i_sn],
@@ -3430,7 +3456,7 @@ void EnergyPlots(bool doResolutionSlices = false){
           
           ResolutionSliceLoop(
             hEvs_Q, Emin, Emax, 10, 1.,
-            false, Form("Q_e_sn%lu",i_sn), "Shower Q",3,3,-9.,-9.,
+            false, Form("Q_e_sn%lu",i_sn), "Electron Q",3,3,-9.,-9.,
             0, -0.10, false,
             -9,-9,
             grEl_Qdist_sig_sn[i_sn],
@@ -3444,7 +3470,7 @@ void EnergyPlots(bool doResolutionSlices = false){
           grEl_Ldist_mean_ly[i_ly] = new TGraphAsymmErrors();
           ResolutionSliceLoop(
             hEvs_L, Emin, Emax, 10, 1.,
-            false, Form("L_e_ly%lu", i_ly), "Shower L",3,3,-9.,-9.,
+            false, Form("L_e_ly%lu", i_ly), "Electron L",3,3,-9.,-9.,
             0, -0.10, false,
             -9,-9,
             grEl_Ldist_sig_ly[i_ly],
@@ -3454,7 +3480,7 @@ void EnergyPlots(bool doResolutionSlices = false){
         
         ResolutionSliceLoop(
           hEvsRes_E_Q, Emin, Emax,10,1., 
-          true, Form("EQ_e_sn%lu_ly%lu",i_sn, i_ly), "Q-only Shower Energy",3,3,-0.8,0.8,
+          true, Form("EQ_e_sn%lu_ly%lu",i_sn, i_ly), "Electron E_{Q}",3,3,-0.8,0.8,
           0, FitThresh, useHybridRes,
             Emin, 42.5,
           grEl_sig_Q_sn_ly[i_sn][i_ly],
@@ -3462,7 +3488,7 @@ void EnergyPlots(bool doResolutionSlices = false){
 
         ResolutionSliceLoop(
           hEvsRes_E_QL,Emin, Emax,10,1.,
-          true, Form("EQL_e_sn%lu_ly%lu",i_sn, i_ly), "Q+L Shower Energy",3,3,-0.8,0.8,
+          true, Form("EQL_e_sn%lu_ly%lu",i_sn, i_ly), "Electron E_{QL}",3,3,-0.8,0.8,
           0, FitThresh, useHybridRes,
             Emin, 42.5,
           grEl_sig_QL_sn_ly[i_sn][i_ly],
@@ -3470,7 +3496,7 @@ void EnergyPlots(bool doResolutionSlices = false){
         
         ResolutionSliceLoop(
           hEvsRes_E_QL_LogL,Emin, Emax,10,1.,
-          true, Form("EQL_LogL_e_sn%lu_ly%lu",i_sn, i_ly), "Q+L (likelihood) Shower Energy",3,3,-0.8,0.8,
+          true, Form("EQL_LogL_e_sn%lu_ly%lu",i_sn, i_ly), "Electron E_{QL}^{likelihood}",3,3,-0.8,0.8,
           0, FitThresh, useHybridRes,
             Emin, 42.5,
           grEl_sig_QL_LogL_sn_ly[i_sn][i_ly],
@@ -3805,7 +3831,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     grEl_sig_Q_Trk_sn[1]->Fit(fResFitTrk[1]);
     grEl_sig_Q_Trk_sn[2]->Fit(fResFitTrk[2]);
     
-    gStyle->SetErrorX(0);
+    //gStyle->SetErrorX(0);
     gPad->SetGrid();
     gStyle->SetGridColor(kGray);
     auto mg_trk = new TMultiGraph();
@@ -4065,7 +4091,7 @@ void EnergyPlots(bool doResolutionSlices = false){
 
     int sn_index[9]={2, 2, 2, 1, 1, 1, 0, 0, 0}; 
     int ly_index[9]={0, 1, 2, 0, 1, 2, 0, 1, 2}; 
-    gStyle->SetErrorX(0);
+    //gStyle->SetErrorX(0);
     TMultiGraph* mg_array[9];
     TPaveText* hd_array[9];
     TLegend* lg_array[9]; 
@@ -4139,7 +4165,7 @@ void EnergyPlots(bool doResolutionSlices = false){
       // Plot fit curves
       cEvsRes_array->cd(i+1);
       gPad->SetMargin(mar_l, mar_r, mar_b, mar_t);
-      gStyle->SetErrorX(0);
+      //gStyle->SetErrorX(0);
       gStyle->SetOptFit(0);
 
       mg_array[i] = new TMultiGraph();
@@ -5208,7 +5234,6 @@ void EventCuts(){
   printf("Event cut parameters\n\n");
   printf("  Min mu cluster size     : %d \n", fMinMuClusterSize);
   printf("  Min-max el cluster size : %d - %d \n", fMinElClusterSize, fMaxElClusterSize);
-  printf("  Max extra hits          : %d\n",fMaxExtraHits); 
   printf("  Min Bragg slope         : %5.0f\n",fMinBraggSlope); 
   printf("  Min mu linearity/frac   : %4.2f / %4.2f\n",fMinMuLinearity,fMinFracMuHitsLinear);
   printf("  Min mu hits for dir fit : %d\n",fMinMuClusterHitsEndFit); 
@@ -6338,7 +6363,7 @@ double _logLEnergyQL(double* x, double* par){
  
   if( L <= 0 ) LogPl = 0.;
 
-  if( fMaxMCEvents > 0 && fMaxMCEvents < 200 ) {
+  if( fMaxMCEvts > 0 && fMaxMCEvts < 200 ) {
   std::cout
   <<"---------------------------\n"
   <<"  Call to LogLEnergyQL(): Q = "<<Q<<"    L = "<<L<<"\n"
@@ -6871,7 +6896,7 @@ void FieldScanAna() {
   mg->GetXaxis()->SetTitleOffset(1.1);
   mg->GetYaxis()->SetTitleOffset(1.5);
   TPaveText* t1a = MakeTextBox(text_x1, leg_y2, textSize, 2);
-  t1a            ->AddText("#bf{LArIAT Run IIB}");
+  t1a            ->AddText("#bf{LArIAT: Run IIB}");
   t1a            ->AddText("Cosmic Michel Electron Dataset");
   t1a           ->Draw();
   TLegend* l1a  = MakeLegend(text_x1, leg_y2 - (2.+0.5)*textSize, textSize, 3);
@@ -6939,7 +6964,7 @@ void FieldScanAna() {
   gStyle->SetOptStat(0);
  
   TPaveText* t1b = MakeTextBox(text_x1, leg_y2, textSize, 2);
-  t1b            ->AddText("#bf{LArIAT Run IIB}");
+  t1b            ->AddText("#bf{LArIAT: Run IIB}");
   t1b            ->AddText("Cosmic Michel Electron Dataset");
   t1b           ->Draw();
   
@@ -7048,7 +7073,7 @@ void PlotSpeAndTau(){
   g_spe1etl->GetXaxis()->SetRangeUser(0.,12.);
   g_spe1etl->GetYaxis()->SetRangeUser(60,90);
   TPaveText* t1a = MakeTextBox(text_x1, leg_y2, textSize, 2);
-  t1a            ->AddText("#bf{LArIAT Run I}");
+  t1a            ->AddText("#bf{LArIAT: Run I}");
   t1a            ->AddText("Cosmic Michel Electron Dataset");
   t1a           ->Draw();
   TLegend* l1a  = MakeLegend(text_x1, leg_y2 - 2.*textSize, textSize, 1);
@@ -7066,7 +7091,7 @@ void PlotSpeAndTau(){
   g_tau1etl->GetXaxis()->SetRangeUser(0.,12.);
   g_tau1etl->GetYaxis()->SetRangeUser(1200.,1360.);
   TPaveText* t1b = MakeTextBox(text_x1, leg_y2, textSize, 2);
-  t1b            ->AddText("#bf{LArIAT Run I}");
+  t1b            ->AddText("#bf{LArIAT: Run I}");
   t1b            ->AddText("Cosmic Michel Electron Dataset");
   t1b           ->Draw();
   TLegend* l1b  = MakeLegend(text_x1, leg_y2 - 2.*textSize, textSize, 1);
@@ -7109,7 +7134,7 @@ void PlotSpeAndTau(){
   g_spe2hmm->SetLineColor(kRed); 
   g_spe2hmm->Draw("P");
   TPaveText* t2a = MakeTextBox(text_x1, leg_y2, textSize, 2);
-  t2a            ->AddText("#bf{LArIAT Run IIB}");
+  t2a            ->AddText("#bf{LArIAT: Run IIB}");
   t2a            ->AddText("Cosmic Michel Electron Dataset");
   t2a           ->Draw();
   TLegend* l2a  = MakeLegend(text_x1, leg_y2 - 2.*textSize, textSize, 2);
@@ -7132,7 +7157,7 @@ void PlotSpeAndTau(){
   g_tau2hmm->SetLineColor(kRed+2); 
   g_tau2hmm->Draw("P");
   TPaveText* t2b = MakeTextBox(text_x1, leg_y2, textSize, 2);
-  t2b            ->AddText("#bf{LArIAT Run IIB}");
+  t2b            ->AddText("#bf{LArIAT: Run IIB}");
   t2b            ->AddText("Cosmic Michel Electron Dataset");
   t2b           ->Draw();
   TLegend* l2b  = MakeLegend(text_x1, leg_y2 - 2.*textSize, textSize, 2);
@@ -7198,16 +7223,16 @@ void MultiGausFit(TH1D* h, TF1* f2g, TF1* fbg, int mode, float param){
   float max_bin = h->GetMaximumBin();
   float peak_res= h->GetBinCenter(max_bin);
   float max     = GetHistMax(h);
-  f2g->SetParameter(0,  0.95*max );
   f2g->SetParLimits(0,  0,1.2*max);
+  f2g->SetParameter(0,  0.95*max );
   f2g->SetParameter(1,  h->GetBinCenter(max_bin));
-  f2g->SetParameter(2,  std::max( float(h->GetRMS()/2.), float(0.01)) );
   f2g->SetParLimits(2,  0.01, 1.5*h->GetRMS() );
-  f2g->SetParameter(3,  0.05*max );
+  f2g->SetParameter(2,  std::max( float(h->GetRMS()/2.), float(0.01)) );
   f2g->SetParLimits(3,  0,0.5*max );
+  f2g->SetParameter(3,  0.05*max );
   f2g->SetParameter(4,  h->GetMean() );
-  f2g->SetParameter(5,  h->GetRMS()*2. );
   f2g->SetParLimits(5,  h->GetRMS(), h->GetRMS()*5. );
+  f2g->SetParameter(5,  h->GetRMS()*2. );
 
   float r1 = h->GetXaxis()->GetXmin();
   float r2 = h->GetXaxis()->GetXmax();
@@ -7593,7 +7618,7 @@ void ResolutionSliceLoop(
         gPad->SetMargin(0.10,0.10,0.15,0.10);
         FormatAxes(h_tmp, axts, axls, 1.0, 1.0);
         h_tmp->GetXaxis()->SetNdivisions(505);
-        h_tmp->SetTitle(Form("%s: %4.1f +/- %4.1f MeV",tag.c_str(),E,dE/2.));
+        h_tmp->SetTitle(Form("%s : %4.1f +/- %4.1f MeV",tag.c_str(),E,dE/2.));
         h_tmp->SetTitleSize(0.06);
         h_tmp->GetXaxis()->SetTitle(h2d->GetYaxis()->GetTitle());
         h_tmp->GetXaxis()->SetRangeUser(xmin,xmax);
@@ -7794,25 +7819,36 @@ void PlotRecombCurves () {
   h_dEdx->GetYaxis()->SetLabelSize(0.04);
   h_dEdx->GetXaxis()->SetTitleOffset(1.2);
   h_dEdx->GetYaxis()->SetTitleOffset(1.2);
-  h_dEdx->GetXaxis()->SetRangeUser(0,30);
+  h_dEdx->GetXaxis()->SetRangeUser(0,6);
   h_dEdx->GetYaxis()->SetRangeUser(0,1);
   h_dEdx->Draw("hist");
 
   modbox_lariat->Draw("same");
   birks_lariat->Draw("same");
-  modbox_ub->Draw("same");
-  birks_ub->Draw("same");
+  //modbox_ub->Draw("same");
+  //birks_ub->Draw("same");
  
   TLegend* ll = MakeLegend( 0.5, 0.93, 0.035, 5 ); 
   ll->SetBorderSize(1);
   ll->SetFillStyle(1001);
-  ll->AddEntry(fbirks,"Birks model", "L");
+  ll->AddEntry(fbirks,"Birks model at 484 V/cm", "L");
   ll->AddEntry(fbirks,"(ICARUS parameters)", "");
-  ll->AddEntry(fmodbox,"Mod. Box model","L");
+  ll->AddEntry(fmodbox,"Mod. Box model at 484 V/cm","L");
   ll->AddEntry(fmodbox,"(ArgoNeuT parameters)", "");
   ll->AddEntry(h_dEdx,"True dE/dx of Geant4 steps","LF");
 //  ll->AddEntry(h_dEdx,"(arb. normalized)","");
-  ll->Draw(); 
+  ll->Draw();
+  
+  
+  
+  TCanvas* c_recomb2 = new TCanvas("recomb2","recomb2",600,600);
+  modbox_lariat->Draw();
+  birks_lariat->Draw("same");
+
+  
+  
+  
+   
 }
 
 
