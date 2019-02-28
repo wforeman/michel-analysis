@@ -29,8 +29,8 @@ float fLArDensity     = 1.370;  // [g/cm^3] (used in LArSoft (90.7K). ArgoNeuT u
 float fExcRatio       = 0.21;
 float fTauT           = 1300.;  // triplet lifetime [ns]:w
 float fTauS           = 6.;  // triplet lifetime [ns]:w
-float fWph = 19.5e-6; // eV
-float fWion = 23.6e-6;
+float fWph            = 19.5e-6; // eV
+float fWion           = 23.6e-6;
 float fBoxModelB      = 0.212;       // ArgoNeuT
 float fBoxModelA      = 0.93;        // ArgoNeuT
 float fBirksModelA    = 0.80;      // ICARUS
@@ -102,10 +102,13 @@ TH1D* hTrue_NContainShwr;
 TH1D* hEnergyTrk[2];
 //TH1D* hEnergyTrkErr;
 TH1D* hEnergyQ[2];
+TH1D* hEnergyL[2];
 TH1D* hEnergyQ_2R[2];
 TH1D* hEnergyQL[2];
 TH1D* hEnergyQL_LogL[2];
 TH1D* hEnergyQL_LogL_Fail[2];
+
+TH2D* hEnergy_QvsL[2];
 
 // 2D resolution histograms (vs. energy)
 TH2D* hEvs_Qtrue;

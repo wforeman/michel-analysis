@@ -1,3 +1,19 @@
+/////////////////////////////////////////////////////////////////////
+// 
+//  AnaMichel.cxx
+//
+//  This is a ROOT analysis macro which takes in files produced as 
+//  output from the analysis/filter module "MichelAna_module" in 
+//  lariatsoft v06_61_00_03.
+//  
+//  The input ROOT files should be kept in a directory called
+//  "files" located in the same area in which the macro is run.
+//  
+//  Author: W. Foreman (wforeman@uchicago.edu, wforeman@iit.edu)
+//  Last updated Feb 2019.
+//
+//////////////////////////////////////////////////////////////////// 
+
 #include "anamichel.h"
 
 bool  fTestMode        = true;
@@ -33,7 +49,6 @@ float fFidMarginZ;
 
 
 bool fDebugFlag = false;
-
 
 // ----------------------------------------
 // Functions for describing parameterization
@@ -118,12 +133,6 @@ void AnaMichel(){
 
   gROOT->Reset();
   
-  if( fTestMode ) {
-    fDoLikelihoodFit  = false;
-    fDoBareElectrons  = true;
-    fMaxMCEvts        = 400000;
-    fMaxMCEvts_IsoEl  = 100000;
-  }
 
   fFastRatio          = fFastRatioNom; 
   fLArDensity               = 1.370; // This is what LArSoft uses (ave Run II)
@@ -198,6 +207,18 @@ void Init() { Init(2); }
 
 void Init(int mode) {
  
+  if( fTestMode ) {
+    fDoLikelihoodFit  = false;
+    fDoBareElectrons  = true;
+    fMaxMCEvts        = 400000;
+    fMaxMCEvts_IsoEl  = 100000;
+  } else {
+    fDoLikelihoodFit  = true;
+    fDoBareElectrons  = true;
+    fMaxMCEvts        = -1;
+    fMaxMCEvts_IsoEl  = -1;
+  }
+
   fRunMode = mode; 
    
   fCalAreaConstants[1][1] = 0.05525;
@@ -435,6 +456,8 @@ void Init(int mode) {
   f_MPV_mu->SetParameter(8,width*rho);
   f_MPV_mu->SetParameter(9,rho);
   f_MPV_mu->SetNpx(100000);
+
+  
 
   /*
   // Parameterizing Q resolution distribution for Michel MC sample (MC2)
@@ -734,6 +757,8 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
   
   hEnergyQ[0]           = new TH1D("EnergyQ_Data","E_{Q} = ( Q / R ) #times W_{ion} (assume uniform R);Reconstructed shower energy [MeV];Events / 2 MeV",E_bins, 0, E_x2);
   hEnergyQ[1]           = (TH1D*)hEnergyQ[0]     ->Clone("EnergyQ_MC");
+  hEnergyL[0]           = new TH1D("EnergyL_Data","E_{L} = L(#alpha + 1 - 1/R) #times W_{ion} (assume uniform R);Reconstructed shower energy [MeV];Events / 2 MeV",E_bins, 0, E_x2);
+  hEnergyL[1]           = (TH1D*)hEnergyL[0]     ->Clone("EnergyL_MC");
   hEnergyQ_2R[0]           = new TH1D("EnergyQ_2R_Data","E_{Q} = ( Q_{e} / R_{e} + Q_{i} / R_{i} ) #times W_{ion} (non-uniform R);Reconstructed shower energy [MeV];Events / 2 MeV",E_bins, 0, E_x2);
   hEnergyQ_2R[1]           = (TH1D*)hEnergyQ_2R[0]     ->Clone("EnergyQ_2R_MC");
   hEnergyQL[0]          = new TH1D("EnergyQL_Data","E_{Q+L} = ( Q + L ) #times W_{ph};Reconstructed shower energy [MeV];Events / 2 MeV",E_bins, 0, E_x2);
@@ -742,6 +767,9 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
   hEnergyQL_LogL[1]     = (TH1D*)hEnergyQL_LogL[0]    ->Clone("EnergyQL_LogL_MC");
   hEnergyQL_LogL_Fail[0]     = new TH1D("EnergyQL_LogL_Fail_Data","E_{Q+L} for events failing Log-L;Reconstructed shower energy [MeV];Events / 2 MeV",E_bins, 0, E_x2);
   hEnergyQL_LogL_Fail[1]     = (TH1D*)hEnergyQL_LogL[0]    ->Clone("EnergyQL_LogL_Fail_MC");
+ 
+  hEnergy_QvsL[0]       = new TH2D("Energy_QvsL_Data",";Charge-based energy E_{Q} [MeV];Light-based energy E_{L} [MeV]",E_bins, 0, E_x2, E_bins, 0, E_x2);
+  hEnergy_QvsL[1]       = (TH2D*)hEnergy_QvsL[0]->Clone("Energy_QvsL_MC");
   
   hEvs_Qtrue                = new TH2D("Evs_Qtrue","True Q vs. true Michel energy dep.;True energy deposited [MeV];True charge [e^{-}]",Eres_bins,Eres_x1,Eres_x2,75,0.,3000e3);
   hEvs_Ltrue                = new TH2D("Evs_Ltrue","True L vs. true Michel energy dep.;True energy deposited [MeV];True light [#gamma]",Eres_bins,Eres_x1,Eres_x2,75,0.,3000e3);
@@ -923,10 +951,12 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
   hDecayTime[type]->Reset();
   hEnergyTrk[type]->Reset();
   hEnergyQ[type]->Reset();
+  hEnergyL[type]->Reset();
   hEnergyQ_2R[type]->Reset();
   hEnergyQL[type]->Reset();
   hEnergyQL_LogL[type]->Reset();
   hEnergyQL_LogL_Fail[type]->Reset();
+  hEnergy_QvsL[type]->Reset();
   hEnergy_QvsQL[type]->Reset();
   hL[type]      ->Reset();
   hQ[type]      ->Reset();
@@ -1272,9 +1302,7 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
 
  
     // Michel op ID
-     
-    if( fMichelOpticalID && fDecayTime > fGateDelay  
-      && maxPeCut ) { 
+    if( fMichelOpticalID && fDecayTime > fGateDelay ) { 
       nEvt_OpID_timeRange++; 
     
       // Muon prompt light cut
@@ -1508,10 +1536,14 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
 
 
           // Calculate Q+L based energy
+          float energyL       = -9.;
           float energyQL      = -9.;
           float energyQL_LogL = -9.;
-          if( Q_shower > 0 && L_shower > 0 ) {
+          if( Q_shower > 0 && L_shower > 0 && fElShowerVis > 0 ) {
 
+            // L-only estimator of energy          
+            energyL     = ( L_shower / ( fExcRatio + 1. - fRecomb ) ) * fWion;
+            
             // simplest case, no recomb assumption needed
             energyQL = ( Q_shower + L_shower )  * fWph; 
           
@@ -1556,10 +1588,12 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
           hQvsL[type]     ->Fill( Q_shower, L_shower, fWgt);
           
           // Fill histograms for energy
-          hEnergyQ[type]    ->Fill( energyQ, fWgt);
-          hEnergyQ_2R[type] ->Fill( energyQ_2R, fWgt);
+          hEnergyQ[type]    ->Fill( energyQ );
+          hEnergyL[type]    ->Fill( energyL );
+          hEnergyQ_2R[type] ->Fill( energyQ_2R );
           hEnergyQL[type]         ->Fill( energyQL, fWgt);
           hEnergyQL_LogL[type]    ->Fill( energyQL_LogL, fWgt);
+          hEnergy_QvsL[type]->Fill( energyQ, energyL);
           hEnergy_QvsQL[type]->Fill( energyQ, energyQL);
           if( fIsRealData ) {
             hTimeVsCharge     ->Fill( day, Q_shower );
@@ -1735,6 +1769,7 @@ void ScaleMC(){
   if( hEnergyQ[0]->GetEntries() > 0 && hEnergyQ[1]->GetEntries() > 0 ) {
     hQ[1]      ->Scale( hQ[0]->Integral() / hQ[1]->Integral() );
     hEnergyQ[1]->Scale( hEnergyQ[0]->Integral() / hEnergyQ[1]->Integral() );
+    hEnergyL[1]->Scale( hEnergyL[0]->Integral() / hEnergyL[1]->Integral() );
     //hEnergyDepResQ->Scale( hEnergyQ[0]->GetEntries() / hEnergyQ[1]->Integral() );
     //hEnergyResQ->Scale( hEnergyQ[0]->Integral() / hEnergyQ[1]->Integral() );
     ScaleHistoDataMC( hEnergyQ_2R);
@@ -1790,6 +1825,7 @@ void LightPlots(){
   t->SetTextSize(textSize);
   t->SetTextAlign(13);
   */
+  
 
   gStyle->SetOptStat(0);
 
@@ -1802,10 +1838,14 @@ void LightPlots(){
 
   cTrigEff -> Divide(2,1);
   for(int ch=0; ch<2; ch++){
-    
     cTrigEff -> cd(ch+1);
+  
+    float hmax = GetHistMax(hPE_prompt_posttrigMC[ch]);
+    hPE_prompt_pretrigMC[ch]->Scale(1/hmax);
+    hPE_prompt_posttrigMC[ch]->Scale(1/hmax);  
+    
 
-    gPad->SetLeftMargin(mar_l); gPad->SetRightMargin(mar_r); gPad->SetTopMargin(mar_t); gPad->SetBottomMargin(mar_b);
+    gPad->SetMargin(mar_l, mar_r, mar_b, mar_t ); 
     hPE_prompt_pretrigMC[ch]->SetTitle("");
     hPE_prompt_pretrigMC[ch]->SetMaximum(hPE_prompt_pretrigMC[ch]->GetMaximum()*1.4);
     
@@ -1814,13 +1854,14 @@ void LightPlots(){
     hPE_prompt_pretrigMC[ch]->GetYaxis()->SetTitleSize(axisTitleSize);
     hPE_prompt_pretrigMC[ch]->GetXaxis()->SetTitleOffset(1.3);
     hPE_prompt_pretrigMC[ch]->GetXaxis()->SetTitleSize(axisTitleSize);
+    hPE_prompt_pretrigMC[ch]->GetYaxis()->SetTitle("Events (normlized)");
     hPE_prompt_pretrigMC[ch]->Draw("hist");
     hPE_prompt_pretrigMC[ch]->GetXaxis()->SetRangeUser(0., hPE_prompt_pretrigMC[ch]->GetXaxis()->GetXmax()*0.7);
     
     hPE_prompt_posttrigMC[ch]       ->SetLineColor(kBlack);
     hPE_prompt_posttrigMC[ch]       ->SetFillColor(38);
     hPE_prompt_posttrigMC[ch]       ->Draw("hist same");
-    trigEffCut[ch]          ->SetParameter(3, hPE_prompt_posttrigMC[ch]->GetBinContent(hPE_prompt_posttrigMC[ch]->GetMaximumBin()) ); 
+    trigEffCut[ch]->SetParameter(3, hPE_prompt_posttrigMC[ch]->GetBinContent(hPE_prompt_posttrigMC[ch]->GetMaximumBin()) ); 
     trigEffCut[ch]          ->SetLineWidth(2);
     trigEffCut[ch]          ->SetLineColor(kRed);
     if( fTrigEff_P[ch] > 0 ) trigEffCut[ch]          ->Draw("same");
@@ -1828,8 +1869,8 @@ void LightPlots(){
      
     lTrigEff[ch] = MakeLegend( leg_x1, leg_y2, textSize, 5); 
     lTrigEff[ch] ->AddEntry(hPE_prompt_pretrigMC[ch], "MC (all events)",       "L");
-    lTrigEff[ch] ->AddEntry(hPE_prompt_pretrigMC[ch],        "MC w/ trig. eff. cuts", "LF");
-    lTrigEff[ch] ->AddEntry(trigEffCut[ch],           "Trig. eff. function (A.U.)","L"); 
+    lTrigEff[ch] ->AddEntry(hPE_prompt_posttrigMC[ch],"MC w/ trig. eff. cut", "LF");
+    lTrigEff[ch] ->AddEntry(trigEffCut[ch],           "Trig. eff. function","L"); 
     lTrigEff[ch]  ->AddEntry((TObject*)0, Form("  P = %6.2f pe",trigEffCut[ch]->GetParameter(0)),"");
     lTrigEff[ch]  ->AddEntry((TObject*)0, Form("  K = %5.2f",trigEffCut[ch]->GetParameter(1)),"");
     lTrigEff[ch] ->Draw();
@@ -2355,6 +2396,18 @@ void EnergyPlots(bool doResolutionSlices = false){
     CopyHistoFormat(hEnergyQ[0],hEnergyQ_2R[0]);
     hEnergyQ_2R[0] ->SetMarkerStyle(4);
     hEnergyQ_2R[0] ->SetMarkerSize(0.7);
+ 
+  // E_L ------------------------------
+    CopyHistoFormat(hEnergyQ[1],hEnergyL[1]);
+    // MC error bands
+    TH1D* hEnergyL_mcerr = (TH1D*)hEnergyL[1]->Clone("energyL_mcerr");
+    CopyHistoFormat(hEnergyQ_mcerr,hEnergyL_mcerr);
+    // Data
+    CopyHistoFormat(hEnergyQ[0],hEnergyL[0]);
+    hEnergyL[0] ->SetMarkerStyle(21);
+    hEnergyL[0] ->SetLineColor(kRed+2);
+    hEnergyL[0] ->SetMarkerColor(kRed+2);
+  //
   
   // E_QL --------------------------
     // MC
@@ -2371,6 +2424,8 @@ void EnergyPlots(bool doResolutionSlices = false){
   // E_QL LogL (uniform recomb ) --------------------
     // MC
     CopyHistoFormat(hEnergyQL[1],hEnergyQL_LogL[1]);
+    TH1D* hEnergyQL_LogL_mcerr = (TH1D*)hEnergyQL_LogL[1]->Clone("energyQL_LogL_mcerr");
+    CopyHistoFormat(hEnergyQ_mcerr,hEnergyQL_LogL_mcerr);
     //hEnergyQL_LogL[1] ->SetTitleSize(0.08);
     //hEnergyQL_LogL[1] ->GetXaxis()->SetTitleSize(0.08);
     //FormatAxes(hEnergyQL_LogL[1], axisTitleSize, axisLabelSize, 1.0, 1.4);
@@ -2479,131 +2534,116 @@ void EnergyPlots(bool doResolutionSlices = false){
   
 
 
-
-
   // ===============================================================
   // 3b) Array of different energy spectra comparing to LogL method
+  //      * Q-only
+  //      * L-only
+  //      * Q+L
+  //      * Q+L (likelihood)
   std::cout
   <<"\n-----------------------------------------------\n"
-  <<"Comparison to Log-Likelihood shower energy spectra...\n";
-  TCanvas* cEnergy2 = new TCanvas("energy2","energy2",1200,400);
-  cEnergy2->Divide(3,1);
+  <<"Comparison of all energy spectra\n";
+  TCanvas* cEnergy2a = new TCanvas("energy2a","energy2a",600,600);
+  TCanvas* cEnergy2b = new TCanvas("energy2b","energy2b",600,600);
+  TCanvas* cEnergy2c = new TCanvas("energy2c","energy2c",600,600);
+  TCanvas* cEnergy2d = new TCanvas("energy2d","energy2d",600,600);
 
-  // Some formatting changes
-//  gStyle              ->SetTitleFont(62,"t");
-  //hEnergyQ[1]         ->SetTitleFont(62,"t");
-  //hEnergyQL[1]         ->SetTitleFont(62,"t");
-  //hEnergyQL_LogL[1]         ->SetTitleFont(62,"t");
   hEnergyQ[1]         ->SetTitleSize(16,"t");
+  hEnergyL[1]         ->SetTitleSize(16,"t");
   hEnergyQL[1]        ->SetTitleSize(16,"t");
   hEnergyQL_LogL[1]   ->SetTitleSize(16,"t");
   FormatAxes(hEnergyQ[1], 0.05, 0.05, 1.0, 1.4);
+  FormatAxes(hEnergyL[1], 0.05, 0.05, 1.0, 1.4);
   FormatAxes(hEnergyQL[1], 0.05, 0.05, 1.0, 1.4);
   FormatAxes(hEnergyQL_LogL[1], 0.05, 0.05, 1.0, 1.4);
-  hEnergyQ[0]       ->SetMarkerSize(0.5);
-  hEnergyQL[0]      ->SetMarkerSize(0.5);
-  hEnergyQL_LogL[0] ->SetMarkerSize(0.8);
+  hEnergyQ[0]       ->SetMarkerSize(0.8);
+  hEnergyL[0]       ->SetMarkerSize(0.8);
+  hEnergyQL[0]      ->SetMarkerSize(0.8);
+  hEnergyQL_LogL[0] ->SetMarkerSize(1.2);
   
   // ------------------------------------------
   // Q-only energy, uniform recomb (left)
-  cEnergy2     ->cd(1);
-  gPad        ->SetMargin(mar_l,mar_r,0.10,0.10); gStyle  ->SetOptStat(0);
-  hEnergyQ[1]->SetTitle(Form("Q-only (R = %0.2f)",fRecomb));
+  //cEnergy2     ->cd(1);
+  cEnergy2a   ->cd();
+  gPad        ->SetMargin(mar_l,mar_r,0.12,0.08); gStyle  ->SetOptStat(0);
+  hEnergyQ[1]->SetTitle("");
   hEnergyQ[1] ->DrawCopy("hist");
+  hEnergyQ_mcerr->DrawCopy("same E2");
   hEnergyQ[0] ->DrawCopy("same P E X0");
   hEnergyQ[1] ->DrawCopy("sameaxis"); // redraw axis
   hTrue_EnergyDep->DrawCopy("hist same");
 
-  /*
-  TPaveText* b3_pt1 = MakeTextBox(0.5, 0.88, textSize, 3);
-  b3_pt1 ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQ[0],hEnergyQ[1])));
-  b3_pt1 ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQ[0],hTrue_EnergyDep)));
-  b3_pt1 ->Draw();
-  
-  TLegend* b3_leg1  = MakeLegend(0.6, 0.88-4*textSize, textSize, 3);
-  b3_leg1 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
-  b3_leg1 ->AddEntry(hEnergyQ[1], "MC reco", "LF");
-  b3_leg1 ->AddEntry(hEnergyQ[0], "Data", "LPE");
-  b3_leg1 ->Draw();
-  */
-  
-  TPaveText* b3_hd1 = MakeTextBox(0.17, 0.88, textSize, 3);
+  TPaveText* b3_hd1 = MakeTextBox(0.55, 0.90, 0.045,2);
   b3_hd1->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
   b3_hd1->AddText("Cosmic Michel e^{+/-}");
-  b3_hd1->AddText("Q-only")->SetTextColor(kBlue);
-  b3_hd1 ->Draw();
+  b3_hd1->Draw();
+
+  TPaveText* b3_hd1b = MakeTextBox(0.55, 0.90-2*0.045-0.02, 0.045, 2);
+  b3_hd1b->AddText("Q-only shower energy")->SetTextColor(kBlue);
+  b3_hd1b->AddText("w/recomb. correction")->SetTextColor(kBlue);
+  b3_hd1b->Draw();
   
-  TLegend* b3_leg1  = MakeLegend(0.6, 0.88, 0.045, 3);
+  TLegend* b3_leg1  = MakeLegend(0.6, 0.90-4*0.045-0.10, 0.045, 3);
   b3_leg1 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
   b3_leg1 ->AddEntry(hEnergyQ[1], "MC reco", "LF");
   b3_leg1 ->AddEntry(hEnergyQ[0], "Data", "LPE");
   b3_leg1 ->Draw();
-
- 
-  /* 
-  // ------------------------------------------
-  // Q-only energy, varying recomb (middle)
-  cEnergy2     ->cd(2);
-  ScaleHistoDataMC(hEnergyQ_2R[1],hTrue_EnergyDep);
-  gPad        ->SetMargin(mar_l,mar_r,0.10,0.10); gStyle  ->SetOptStat(0);
-//  hEnergyQ_2R[1] ->SetTitle("Q-only (varying recomb)");
-  hEnergyQ_2R[1]  ->SetTitle(Form("Q-only (R_{i} = %0.2f, R_{ph} = %0.2f)",fRecombIon,fRecombPh));
-  hEnergyQ_2R[1] ->SetStats(0);
-  hEnergyQ_2R[1]->SetMaximum( 1.1*std::max(GetHistMax(hEnergyQ_2R[1]),GetHistMax(hEnergyQ_2R[0]) ) );
-  hEnergyQ_2R[1]->SetMaximum( 1.1*std::max(float(hEnergyQ_2R[1]->GetMaximum()),GetHistMax(hTrue_EnergyDep)) );
-  hEnergyQ_2R[1] ->DrawCopy("hist");
   
-  hEnergyQ_2R[0] ->DrawCopy("same P E X0");
-  hEnergyQ_2R[1] ->DrawCopy("sameaxis"); // redraw axis
+  // ------------------------------------------
+  // L-only energy, uniform recomb (left)
+  cEnergy2b   ->cd();
+  gPad        ->SetMargin(mar_l,mar_r,0.12,0.08); gStyle  ->SetOptStat(0);
+  hEnergyL[1]->SetTitle("");
+  hEnergyL[1] ->DrawCopy("hist");
+  hEnergyL_mcerr->DrawCopy("same E2");
+  hEnergyL[0] ->DrawCopy("same P E X0");
+  hEnergyL[1] ->DrawCopy("sameaxis"); // redraw axis
   hTrue_EnergyDep->DrawCopy("hist same");
 
-  TPaveText* b3_pt3 = MakeTextBox(0.5, 0.88, 0.05, 3);
-  b3_pt3 ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQ_2R[0],hEnergyQ_2R[1])));
-  b3_pt3 ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQ_2R[0],hTrue_EnergyDep)));
-  b3_pt3 ->Draw();
+  TPaveText* b3_hd2 = MakeTextBox(0.55, 0.90, 0.045,2);
+  b3_hd2->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
+  b3_hd2->AddText("Cosmic Michel e^{+/-}");
+  b3_hd2->Draw();
+
+  TPaveText* b3_hd2b = MakeTextBox(0.55, 0.90-2*0.045-0.02, 0.045, 2);
+  b3_hd2b->AddText("L-only shower energy")->SetTextColor(kRed+2);
+  b3_hd2b->AddText("w/recomb. correction")->SetTextColor(kRed+2);
+  b3_hd2b->Draw();
   
-  TLegend* b3_leg3  = MakeLegend(0.6, 0.88-4*0.05, 0.05, 3);
-  b3_leg3 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
-  b3_leg3 ->AddEntry(hEnergyQ_2R[1], "MC reco", "LF");
-  b3_leg3 ->AddEntry(hEnergyQ_2R[0], "Data", "LPE");
-  b3_leg3 ->Draw();
-  */
+  TLegend* b3_leg2  = MakeLegend(0.6, 0.90-4*0.045-0.10, 0.045, 3);
+  b3_leg2 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
+  b3_leg2 ->AddEntry(hEnergyL[1], "MC reco", "LF");
+  b3_leg2 ->AddEntry(hEnergyL[0], "Data", "LPE");
+  b3_leg2 ->Draw();
   
+
+
   // ------------------------------------------
   // Q+L (middle)
-  cEnergy2     ->cd(2);
+  cEnergy2c   ->cd();
   ScaleHistoDataMC(hEnergyQL[1],hTrue_EnergyDep);
-  gPad        ->SetMargin(mar_l,mar_r,0.10,0.10); gStyle  ->SetOptStat(0);
-//  hEnergyQL_2R[1] ->SetTitle("Q-only (varying recomb)");
-  hEnergyQL[1]  ->SetTitle("Q + L");
+  gPad        ->SetMargin(mar_l,mar_r,0.12,0.08); gStyle  ->SetOptStat(0);
+  hEnergyQL[1]  ->SetTitle("");
   hEnergyQL[1] ->SetStats(0);
   hEnergyQL[1]->SetMaximum( 1.1*std::max(GetHistMax(hEnergyQL[1]),GetHistMax(hEnergyQL[0]) ) );
   hEnergyQL[1]->SetMaximum( 1.1*std::max(float(hEnergyQL[1]->GetMaximum()),GetHistMax(hTrue_EnergyDep)) );
   hEnergyQL[1] ->DrawCopy("hist");
-  
+  hEnergyQL_mcerr->DrawCopy("same E2");
   hEnergyQL[0] ->DrawCopy("same P E X0");
   hEnergyQL[1] ->DrawCopy("sameaxis"); // redraw axis
   hTrue_EnergyDep->DrawCopy("hist same");
 
-  /*
-  TPaveText* b3_pt3 = MakeTextBox(0.5, 0.88, textSize, 3);
-  b3_pt3 ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQL[0],hEnergyQL[1])));
-  b3_pt3 ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQL[0],hTrue_EnergyDep)));
-  b3_pt3 ->Draw();
-  
-  TLegend* b3_leg3  = MakeLegend(0.6, 0.88-4*textSize, textSize, 3);
-  b3_leg3 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
-  b3_leg3 ->AddEntry(hEnergyQL[1], "MC reco", "LF");
-  b3_leg3 ->AddEntry(hEnergyQL[0], "Data", "LPE");
-  b3_leg3 ->Draw();
-  */
-  TPaveText* b3_hd2 = MakeTextBox(0.17, 0.88, textSize, 3);
-  b3_hd2->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
-  b3_hd2->AddText("Cosmic Michel e^{+/-}");
-  b3_hd2->AddText("Q+L")->SetTextColor(kMagenta+2);
-  b3_hd2 ->Draw();
+  TPaveText* b3_hd3 = MakeTextBox(0.55, 0.90, 0.045,2);
+  b3_hd3->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
+  b3_hd3->AddText("Cosmic Michel e^{+/-}");
+  b3_hd3->Draw();
 
-  TLegend* b3_leg3  = MakeLegend(0.6, 0.88, 0.045, 3);
+  TPaveText* b3_hd3b = MakeTextBox(0.55, 0.90-2*0.045-0.02, 0.045, 2);
+  b3_hd3b->AddText("Combined Q+L")->SetTextColor(kMagenta+2);
+  b3_hd3b->AddText("shower energy")->SetTextColor(kMagenta+2);
+  b3_hd3b->Draw();
+  
+  TLegend* b3_leg3  = MakeLegend(0.6, 0.90-4*0.045-0.10, 0.045, 3);
   b3_leg3 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
   b3_leg3 ->AddEntry(hEnergyQL[1], "MC reco", "LF");
   b3_leg3 ->AddEntry(hEnergyQL[0], "Data", "LPE");
@@ -2611,32 +2651,23 @@ void EnergyPlots(bool doResolutionSlices = false){
 
   // ------------------------------------------
   // Q+L Log-Likelihood, uniform recomb
-  cEnergy2     ->cd(3);
-  gPad        ->SetMargin(mar_l,mar_r,0.10,0.10); gStyle  ->SetOptStat(0);
+  //cEnergy2     ->cd(3);
+  cEnergy2d->cd();
+  gPad        ->SetMargin(mar_l,mar_r,0.12,0.08); gStyle  ->SetOptStat(0);
   ScaleHistoDataMC(hEnergyQL_LogL[1],hTrue_EnergyDep);
-  hEnergyQL_LogL[1] ->SetTitle("Q + L likelihood fit");
+  hEnergyQL_LogL[1] ->SetTitle("");
   hEnergyQL_LogL[1] ->SetStats(0);
   hEnergyQL_LogL[1]->SetMaximum( 1.1*std::max(GetHistMax(hEnergyQL_LogL[1]),GetHistMax(hEnergyQL_LogL[0]) ) );
   hEnergyQL_LogL[1]->SetMaximum( 1.1*std::max(float(hEnergyQL_LogL[1]->GetMaximum()),GetHistMax(hTrue_EnergyDep)) );
   hEnergyQL_LogL[1] ->DrawCopy("hist");
+  hEnergyQL_LogL_mcerr->DrawCopy("same E2");
   hEnergyQL_LogL[0] ->DrawCopy("same P E X0");
   hEnergyQL_LogL[1] ->DrawCopy("sameaxis"); // redraw axis
   hTrue_EnergyDep   ->DrawCopy("hist same");
-
-  /*
-  TPaveText* b3_pt2 = MakeTextBox(0.5, 0.88, textSize, 3);
-  b3_pt2 ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQL_LogL[0],hEnergyQL_LogL[1])));
-  b3_pt2 ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyQL_LogL[0],hTrue_EnergyDep)));
-  b3_pt2 ->Draw();
   
-  TLegend* b3_leg2  = MakeLegend(0.6, 0.88-4*textSize, textSize, 3);
-  b3_leg2 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
-  b3_leg2 ->AddEntry(hEnergyQL_LogL[1], "MC reco", "LF");
-  b3_leg2 ->AddEntry(hEnergyQL_LogL[0], "Data", "LPE");
-  b3_leg2 ->Draw();
-  */
-  TPaveText* b3_hd3 = MakeTextBox(0.17, 0.88, textSize, 3);
-  b3_hd3->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
+  /*
+  TPaveText* b3_hd3 = MakeTextBox(0.17, 0.88, 0.045, 3);
+  b3_hd3->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
   b3_hd3->AddText("Cosmic Michel e^{+/-}");
   b3_hd3->AddText("Q+L (likelihood)")->SetTextColor(kGreen+2);
   b3_hd3 ->Draw();
@@ -2646,8 +2677,59 @@ void EnergyPlots(bool doResolutionSlices = false){
   b3_leg2 ->AddEntry(hEnergyQL_LogL[1], "MC reco", "LF");
   b3_leg2 ->AddEntry(hEnergyQL_LogL[0], "Data", "LPE");
   b3_leg2 ->Draw();
+*/
 
-//  gStyle              ->SetTitleFont(42,"t");
+  TPaveText* b3_hd4 = MakeTextBox(0.55, 0.90, 0.045,2);
+  b3_hd4->AddText(Form("#bf{LArIAT %s}",runtag.c_str()));
+  b3_hd4->AddText("Cosmic Michel e^{+/-}");
+  b3_hd4->Draw();
+
+  TPaveText* b3_hd4b = MakeTextBox(0.55, 0.90-2*0.045-0.02, 0.045, 3);
+  b3_hd4b->AddText("Combined Q+L")->SetTextColor(kGreen+2);
+  b3_hd4b->AddText("shower energy")->SetTextColor(kGreen+2);
+  b3_hd4b->AddText("(likelihood method)")->SetTextColor(kGreen+2);
+  b3_hd4b->Draw();
+  
+  TLegend* b3_leg4  = MakeLegend(0.6, 0.90-4*0.045-0.10, 0.045, 3);
+  b3_leg4 ->AddEntry(hTrue_EnergyDep, "MC true E_{dep}", "L");   
+  b3_leg4 ->AddEntry(hEnergyQL_LogL[1], "MC reco", "LF");
+  b3_leg4 ->AddEntry(hEnergyQL_LogL[0], "Data", "LPE");
+  b3_leg4 ->Draw();
+  
+  
+  
+  
+  //**************************************
+  // EQ vs EL
+
+  TCanvas* cEnergy_QvsL[2];
+
+  cEnergy_QvsL[0] = new TCanvas("cEnergy_QvsL_Data","Data",700,700);
+  gPad->SetMargin(0.15,0.15,0.12,0.05);
+  gPad->SetGrid();
+  hEnergy_QvsL[0]->GetXaxis()->SetTitleOffset(1.3);
+  hEnergy_QvsL[0]->SetTitle("Data");
+  hEnergy_QvsL[0]->SetOption("colz");
+  hEnergy_QvsL[0]->Draw();
+ 
+  
+  cEnergy_QvsL[1] = new TCanvas("cEnergy_QvsL_MC","MC",700,700);
+  gPad->SetMargin(0.15,0.15,0.12,0.10);
+  gPad->SetGrid();
+  hEnergy_QvsL[1]->GetXaxis()->SetTitleOffset(1.3);
+  hEnergy_QvsL[1]->SetTitle("MC");
+  hEnergy_QvsL[1]->SetOption("colz");
+  hEnergy_QvsL[1]->Draw();
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   
   ///////////////////////////////
@@ -2656,7 +2738,10 @@ void EnergyPlots(bool doResolutionSlices = false){
   cQL       ->Write();
   cEnergyTrk->Write();
   cEnergy   ->Write();
-  cEnergy2  ->Write();
+  cEnergy2a ->Write();
+  cEnergy2b ->Write();
+  cEnergy2c ->Write();
+  cEnergy2d ->Write();
   ////////////////////////////////
  
  
@@ -3029,7 +3114,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     legg  ->AddEntry(gr_rms_QL_LogL,"Q+L RMS (likelihood)","PL");
     legg  ->Draw("same");
     TPaveText* headd = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 2);
-    headd ->AddText("#bf{LArIAT: Run IIB MC}");
+    headd ->AddText("#bf{LArIAT Run IIB MC}");
     headd ->AddText("Michel e^{+/-}");
     //headd ->AddText(Form("#tau_{e} = %4.2f ms",0.83));
     //headd ->AddText(Form("#sigma_{PE} = %4.1f%%",hPERes->GetRMS()*100.));
@@ -5224,6 +5309,8 @@ void StabilityPlots(){
 
 //################################################################################
 void EventCuts(){
+
+  fMaxMCEvts=-1;
 
   TH1D* hOpEventCuts;
   TH1D* hEventCuts;// = (TH1D*)fileData
@@ -7585,6 +7672,11 @@ void ResolutionSliceLoop(
         sig_err_l = std::sqrt( std::pow((w_sig/W)*sig_err,2) + std::pow(sig-min,2) );
         sig_err_u = std::sqrt( std::pow((w_sig/W)*sig_err,2) + std::pow(sig-max,2) );
 
+        // .................................
+        // Temporary 2/26/19
+        sig = sigRMS;
+        sig_err_l = 0;
+        sig_err_u = 0;
       
       } 
     
