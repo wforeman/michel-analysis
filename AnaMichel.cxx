@@ -16,14 +16,20 @@
 
 #include "anamichel.h"
 
-bool  fTestMode        = false;
+// Default mode:
+//bool  fDoLikelihoodFit  = true;
+//bool  fDoBareElectrons  = true;
+//int   fMaxMCEvts        = -200000;
+//int   fMaxMCEvts_IsoEl  = -100000;
 
-bool  fDoLikelihoodFit  = true;
+// Fast mode
+bool  fDoLikelihoodFit  = false;
 bool  fDoBareElectrons  = true;
+int   fMaxMCEvts        = 400000;
+int   fMaxMCEvts_IsoEl  = 100000;
+
 bool  fSavePlots        = true;
 int   fRunMode          = 2;
-int   fMaxMCEvts        = -200000;
-int   fMaxMCEvts_IsoEl  = -100000;
 
 bool fHybridRes_UseChisquareWeighting = true;
 
@@ -207,18 +213,6 @@ void Init() { Init(2); }
 
 void Init(int mode) {
  
-  if( fTestMode ) {
-    fDoLikelihoodFit  = false;
-    fDoBareElectrons  = true;
-    fMaxMCEvts        = 400000;
-    fMaxMCEvts_IsoEl  = 100000;
-  } else {
-    fDoLikelihoodFit  = true;
-    fDoBareElectrons  = true;
-    fMaxMCEvts        = -1;
-    fMaxMCEvts_IsoEl  = -1;
-  }
-
   fRunMode = mode; 
    
   fCalAreaConstants[1][1] = 0.05525;
@@ -1476,6 +1470,7 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
     //  - 2D shower
     //  - dT cut
     if( goodShower2D &&  fDecayTime >= fdTcut ) { //&&  fMuEnd3D_X > 0.) {
+    //if( goodShower2D &&  fDecayTime >= fdTcut &&  fMuEnd3D_X > 0.) {
       
       // require the 2D direction of the shower be going backward
       // (away from wireplanes)
