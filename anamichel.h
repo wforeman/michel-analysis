@@ -499,7 +499,7 @@ float fMinBraggSlope;
   float                 fElShowerPhel_qc;
   float                 fPEPrompt;
   float                 fDecayTime;
-  float                 fTotalPhelCh[2];
+//  float                 fTotalPhelCh[2];
   float                 fTotalPhel;
     
   // Track information
@@ -741,7 +741,7 @@ void setBranches(TTree *tree){
   tree   ->SetBranchAddress("ElShowerPhel_prompt",      &fElShowerPhel_prompt);
   tree   ->SetBranchAddress("ElShowerPhel_qc",      &fElShowerPhel_qc);
   tree   ->SetBranchAddress("MuContam_prompt",  &fMuContam_prompt);
-  tree    ->SetBranchAddress("TotalPhelCh",     &fTotalPhelCh);
+//  tree    ->SetBranchAddress("TotalPhelCh",     &fTotalPhelCh);
   tree   ->SetBranchAddress("MuContam_total",  &fMuContam_total);
 //  tree   ->SetBranchAddress("NumTrack", &fNumTrack);
 //  tree   ->SetBranchAddress("NumTrackStopping", &fNumTrackStopping);

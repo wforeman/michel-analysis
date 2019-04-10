@@ -9,14 +9,14 @@
 //  The input ROOT files should be kept in a directory called
 //  "files" located in the same area in which the macro is run.
 //  
-//  Author: W. Foreman (wforeman@uchicago.edu, wforeman@iit.edu)
-//  Last updated Feb 2019.
+//  Author: W. Foreman (wforeman_at_uchicago.edu)
+//  Last updated Mar 2019
 //
 //////////////////////////////////////////////////////////////////// 
 
 #include "anamichel.h"
 
-bool  fTestMode        = true;
+bool  fTestMode        = false;
 
 bool  fDoLikelihoodFit  = true;
 bool  fDoBareElectrons  = true;
@@ -1291,12 +1291,10 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
     //nEvt_TotalEvents++;
 
 
-    // require "good"  shower on induction plane (mostly the same
-    // quality cuts as before, excluding just a few 
+    // require "good"  shower on induction
     if( fElShowerSize_Pl0 > 0 ) {
-      shower2D_Pl0 = true;
-      if( fElShowerSize_Pl0 > 0 ) 
-        goodShower2D_Pl0=true;
+      shower2D_Pl0      = true;
+      goodShower2D_Pl0  = true;
     }
     if( fElShowerSize > 0 ) shower2D = true;
 
@@ -1534,7 +1532,6 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
           float energyQ_2R  = ( Q_ion/fRecombIon 
                                 + Q_phot/fRecombPh ) * fWion; // shower energy (non-uniform recomb)
 
-
           // Calculate Q+L based energy
           float energyL       = -9.;
           float energyQL      = -9.;
@@ -1563,7 +1560,6 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
               // Check for cases where minimization failed (ie, the most likely
               // energy is very close to the Emin/Emax bounds)
               if( energyQL_LogL < E_ll + 3*dE || energyQL_LogL > E_ul - 3*dE ) {
-                //std::cout<<"Log-L method failed:  Q "<<Q_shower<<"   L "<<L_shower<<"   E_QL "<<energyQL<<" --> LogL "<<energyQL_LogL<<"\n";
                 energyQL_LogL = -9;
                 hEnergyQL_LogL_Fail[type]    ->Fill( energyQL );
               }
@@ -2171,17 +2167,9 @@ void EnergyPlots(bool doResolutionSlices = false){
   
   float statH = 0.12;
   float statW = 0.17;
-
-  // Fit functions
-//  TF1*      gaus2Fit[2];
-//  TF1*      gaus_bg[2];
-  //TF1* gaus2Fit  = new TF1("DoubleGaus","[0]*exp( - pow( (x-[1])/( sqrt(2)*[2]), 2)) + [3]*exp( - pow( (x-[4])/( sqrt(2)*[5]), 2)) ",-3,3);
-  //TF1* gaus_bg   = new TF1("Gaus_bg","[0]*exp( -pow((x-[1])/(sqrt(2)*[2]),2))",-3,3);
-  //gaus_bg   ->SetLineColor(kOrange-1);
   
-  int ii=0;
-  int dataMax;
-  int mcMax;
+  //int ii=0;
+  int dataMax, mcMax;
  
   // Scale the true deposited energy distributions 
   hTrue_EnergyDepTrk  ->Scale( hEnergyTrk[0]->GetEntries()/(float)hTrue_EnergyDepTrk->Integral() );
@@ -2296,7 +2284,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   std::cout
   <<"\n-----------------------------------------------\n"
   <<"Ionization-only energy (electron track)...\n";
-  TCanvas* cEnergyTrk = new TCanvas("energyTrk","energyTrk",500,500);
+  TCanvas* cEnergyTrk = new TCanvas("energyTrk","energyTrk",600,600);
   gPad->SetMargin(mar_l,mar_r,mar_b,mar_t);
   gStyle->SetOptStat(0);
   
@@ -2351,15 +2339,15 @@ void EnergyPlots(bool doResolutionSlices = false){
   headTrk ->AddText("w/recomb. correction")->SetTextColor(kBlue);
   headTrk->Draw();
 
-  TPaveText* ptTrk  = MakeTextBox(leg_x1, leg_y2-4.5*textSize - 0.02, textSize, 1);
-  ptTrk   ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyTrk[0],hEnergyTrk[1])));
+  //TPaveText* ptTrk  = MakeTextBox(leg_x1, leg_y2-4.5*textSize - 0.02, textSize, 1);
+  //ptTrk   ->AddText(Form("Data-MC_{reco} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyTrk[0],hEnergyTrk[1])));
   //ptTrk   ->AddText(Form("Data-MC_{true} #chi^{2}_{#nu} = %5.2f", GetChi2(hEnergyTrk[0],hTrue_EnergyDepTrk)));
 //  ptTrk   ->AddText("Cuts:");
 //  ptTrk   ->AddText(Form("  #DeltaT > %3.1f #mus",fdTcut/1000.));
 //  ptTrk   ->AddText (Form("  3D shower (Npts #geq %1d)",fMinNumPts3D ));
-  ptTrk   ->Draw();
+  //ptTrk   ->Draw();
   TLegend* legTrk = MakeLegend(leg_x1+0.08, leg_y2 - 5.5*textSize-0.07, textSize, 3);
-  legTrk  ->AddEntry(hTrue_EnergyDepTrk, "MC true #it{E}_{#it{dep}}^{#it{ion}}", "L");   
+  legTrk  ->AddEntry(hTrue_EnergyDepTrk, "MC true E_{dep}^{ion}", "L");   
   legTrk  ->AddEntry(hEnergyTrk[1], "MC reco", "L");
   legTrk  ->AddEntry(hEnergyTrk[0], "Data", "LPE");
   legTrk  ->Draw();
@@ -2369,11 +2357,27 @@ void EnergyPlots(bool doResolutionSlices = false){
   // --------------------------------------------------
   // Format all energy histograms
   axisTitleSize = 0.045;
-  axisLabelSize = 0.045; 
-  
+  axisLabelSize = 0.040; 
+
   // true E dep ------------------
     hTrue_EnergyDep ->SetLineStyle(2);
     hTrue_EnergyDep ->SetLineColor(kBlack);
+
+  // E_Trk
+    hEnergyTrk[1]->SetFillColor(kWhite);
+    hEnergyTrk[1]->SetLineColor(kBlack);
+    FormatAxes(hEnergyTrk[1], axisTitleSize, axisLabelSize, 1.0, 1.5);
+    // MC error bars
+    TH1D* hEnergyTrk_mcerr = (TH1D*)hEnergyTrk[1]->Clone("energyTrk_mcerr");
+    hEnergyTrk_mcerr->SetFillStyle(3002);
+    hEnergyTrk_mcerr->SetFillColor(kGray+2);
+    hEnergyTrk_mcerr->SetMarkerColor(kBlack);
+    // Data
+    hEnergyTrk[0] ->SetMarkerStyle(20);
+    hEnergyTrk[0] ->SetMarkerSize(0.7);
+    hEnergyTrk[0] ->SetLineColor(kBlue);
+    hEnergyTrk[0] ->SetMarkerColor(kBlue);
+
  
   // E_Q --------------------------
     // MC
@@ -2543,23 +2547,55 @@ void EnergyPlots(bool doResolutionSlices = false){
   std::cout
   <<"\n-----------------------------------------------\n"
   <<"Comparison of all energy spectra\n";
+  TCanvas* cEnergyTrk2 = new TCanvas("energyTrk2","energyTrk2",600,600);
   TCanvas* cEnergy2a = new TCanvas("energy2a","energy2a",600,600);
   TCanvas* cEnergy2b = new TCanvas("energy2b","energy2b",600,600);
   TCanvas* cEnergy2c = new TCanvas("energy2c","energy2c",600,600);
   TCanvas* cEnergy2d = new TCanvas("energy2d","energy2d",600,600);
 
+  hEnergyTrk[1]       ->SetTitleSize(16,"t");
   hEnergyQ[1]         ->SetTitleSize(16,"t");
   hEnergyL[1]         ->SetTitleSize(16,"t");
   hEnergyQL[1]        ->SetTitleSize(16,"t");
   hEnergyQL_LogL[1]   ->SetTitleSize(16,"t");
-  FormatAxes(hEnergyQ[1], 0.05, 0.05, 1.0, 1.4);
-  FormatAxes(hEnergyL[1], 0.05, 0.05, 1.0, 1.4);
-  FormatAxes(hEnergyQL[1], 0.05, 0.05, 1.0, 1.4);
-  FormatAxes(hEnergyQL_LogL[1], 0.05, 0.05, 1.0, 1.4);
+  FormatAxes(hEnergyTrk[1],     axisTitleSize, axisLabelSize, 1.0, 1.4);
+  FormatAxes(hEnergyQ[1],       axisTitleSize, axisLabelSize, 1.0, 1.4);
+  FormatAxes(hEnergyL[1],       axisTitleSize, axisLabelSize, 1.0, 1.4);
+  FormatAxes(hEnergyQL[1],      axisTitleSize, axisLabelSize, 1.0, 1.4);
+  FormatAxes(hEnergyQL_LogL[1], axisTitleSize, axisLabelSize, 1.0, 1.4);
+  hEnergyTrk[0]     ->SetMarkerSize(0.8);
   hEnergyQ[0]       ->SetMarkerSize(0.8);
   hEnergyL[0]       ->SetMarkerSize(0.8);
   hEnergyQL[0]      ->SetMarkerSize(0.8);
   hEnergyQL_LogL[0] ->SetMarkerSize(1.2);
+
+  // ------------------------------------------
+  // Trk energy
+  cEnergyTrk2   ->cd();
+  gPad        ->SetMargin(mar_l,mar_r,0.12,0.08); gStyle  ->SetOptStat(0);
+  hEnergyTrk[1]->SetTitle("");
+  hEnergyTrk[1] ->DrawCopy("hist");
+  hEnergyTrk_mcerr->DrawCopy("same E2");
+  hEnergyTrk[0] ->DrawCopy("same P E X0");
+  hEnergyTrk[1] ->DrawCopy("sameaxis"); // redraw axis
+  hTrue_EnergyDepTrk->DrawCopy("hist same");
+
+  TPaveText* b3_hd1trk = MakeTextBox(0.55, 0.90, 0.045,2);
+  b3_hd1trk->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
+  b3_hd1trk->AddText("Cosmic Michel e^{+/-}");
+  b3_hd1trk->Draw();
+
+  TPaveText* b3_hd1btrk = MakeTextBox(0.55, 0.90-2*0.045-0.02, 0.045, 2);
+  b3_hd1btrk->AddText("Q-only ion. trk energy")->SetTextColor(kBlue);
+  b3_hd1btrk->AddText("w/recomb. correction")->SetTextColor(kBlue);
+  b3_hd1btrk->Draw();
+  
+  TLegend* b3_leg1trk  = MakeLegend(0.6, 0.90-4*0.045-0.10, 0.045, 3);
+  b3_leg1trk ->AddEntry(hTrue_EnergyDepTrk, "MC true E_{dep}^{ion}", "L");   
+  b3_leg1trk ->AddEntry(hEnergyTrk[1], "MC reco", "LF");
+  b3_leg1trk ->AddEntry(hEnergyTrk[0], "Data", "LPE");
+  b3_leg1trk ->Draw();
+
   
   // ------------------------------------------
   // Q-only energy, uniform recomb (left)
@@ -2705,7 +2741,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   TCanvas* cEnergy_QvsL[2];
 
   cEnergy_QvsL[0] = new TCanvas("cEnergy_QvsL_Data","Data",700,700);
-  gPad->SetMargin(0.15,0.15,0.12,0.05);
+  gPad->SetMargin(0.15,0.15,0.12,0.10);
   gPad->SetGrid();
   hEnergy_QvsL[0]->GetXaxis()->SetTitleOffset(1.3);
   hEnergy_QvsL[0]->SetTitle("Data");
@@ -2738,6 +2774,7 @@ void EnergyPlots(bool doResolutionSlices = false){
   cQL       ->Write();
   cEnergyTrk->Write();
   cEnergy   ->Write();
+  cEnergyTrk2->Write();
   cEnergy2a ->Write();
   cEnergy2b ->Write();
   cEnergy2c ->Write();
@@ -3115,7 +3152,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     legg  ->Draw("same");
     TPaveText* headd = MakeTextBox(mar_l + 0.02, 1.-mar_t-0.02, textSize, 2);
     headd ->AddText("#bf{LArIAT Run IIB MC}");
-    headd ->AddText("Michel e^{+/-}");
+    headd ->AddText("Cosmic Michel e^{+/-}");
     //headd ->AddText(Form("#tau_{e} = %4.2f ms",0.83));
     //headd ->AddText(Form("#sigma_{PE} = %4.1f%%",hPERes->GetRMS()*100.));
     headd ->Draw();
@@ -3393,7 +3430,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons shower E_Q nominal
     ResolutionSliceLoop(
       hEvsRes_E_Q, Emin, Emax, 10, 1.,
-      true, "EQ_e_nom", "Electron E_{Q}",3,3,-0.8,0.8,
+      true, "EQ_e_nom", "Electron E_{Q}",3,3,-0.3,0.3,
       0, FitThresh, useHybridRes,
         Emin, 42.5,
       grEl_sig_Q_nom,
@@ -3402,7 +3439,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons shower E_QL nominal
     ResolutionSliceLoop(
       hEvsRes_E_QL, Emin, Emax, 10, 1.,
-      true, "EQL_e_nom", "Electron E_{QL}",3,3,-0.8,0.8,
+      true, "EQL_e_nom", "Electron E_{QL}",3,3,-0.3,0.3,
       0, FitThresh, useHybridRes,
         Emin, 42.5,
       grEl_sig_QL_nom,
@@ -3411,7 +3448,7 @@ void EnergyPlots(bool doResolutionSlices = false){
     // Isolated electrons shower E_QL LogL nominal
     ResolutionSliceLoop(
       hEvsRes_E_QL_LogL, Emin, Emax, 10, 1.,
-      true, "EQL_LogL_e_nom", "Electron E_{QL}^{likelihood}",3,3,-0.8,0.8,
+      true, "EQL_LogL_e_nom", "Electron E_{QL}^{likelihood}",3,3,-0.3,0.3,
       0, FitThresh, useHybridRes,
         Emin, 42.5,
       grEl_sig_QL_LogL_nom,
@@ -7713,7 +7750,7 @@ void ResolutionSliceLoop(
         h_tmp->SetTitle(Form("%s : %4.1f +/- %4.1f MeV",tag.c_str(),E,dE/2.));
         h_tmp->SetTitleSize(0.06);
         h_tmp->GetXaxis()->SetTitle(h2d->GetYaxis()->GetTitle());
-        h_tmp->GetXaxis()->SetRangeUser(xmin,xmax);
+        h_tmp->GetXaxis()->SetRangeUser(x1,x2);
         h_tmp->DrawCopy();
         if( fbg.GetParameter(0) ) {
           std::cout<<"  Background gaus has N = "<<fbg.GetParameter(0)<<" --> plotting!\n";
