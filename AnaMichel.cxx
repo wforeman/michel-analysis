@@ -36,9 +36,6 @@ bool fHybridRes_UseChisquareWeighting = true;
 float fChargeSignFilter = 0; // allow only electrons (-1), positrons (1)
 
 
-float fChargeRes;
-float fPhelRes;
-
 TH1D* hElectronLifetime;
 TCanvas* cdefault;
 
@@ -116,8 +113,6 @@ float fFastRatioNom = 0.469;
 float fChargeSmearFactor = 0.0;
 bool fUsePmt[2];
 
-float fChargeResFromMC = 0.9;
-float fPEResFromMC[2];
 
 float fQCorrFactor = 1.0;
 float fLCorrFactor = 1.0;
@@ -234,15 +229,8 @@ void Init(int mode) {
     filenameData              = "files/MichelAna_run1.root";
     filenameMC                = "files/MichelAna_mc1.root";
     filenameMC_ns             = "files/MichelAna_mc1_nosmear.root";
-//    filenameData              = "files/MichelAna_run1_default.root";
-//    filenameMC                = "files/MichelAna_mc2_default.root";
 
     
-    fChargeResFromMC          = 1.0;
-    fPEResFromMC[0]           = 1.0;
-    fPEResFromMC[1]           = 1.0;
-
-
     fUsePmt[0]                = false;
     fUsePmt[1]                = true;
 
@@ -279,25 +267,36 @@ void Init(int mode) {
     filenameData              = "files/MichelAna_run2b.root";
     filenameMC                = "files/MichelAna_mc2b.root";
     filenameMC_ns             = "files/MichelAna_mc2b_nosmear.root";
-    //filenameData              = "files/MichelAna_run2b_default.root";
-    //filenameMC                = "files/MichelAna_mc2_default.root";
     
-    fChargeResFromMC          = 1.0;
-    fPEResFromMC[0]           = 1.0;
-    fPEResFromMC[1]           = 1.0;
-
     // Last optimized 10/1/2018
     fScaleFactor[0]           = 1.021;
     fTrigEff_P[0]             = 81.31; //82.48;
     fTrigEff_K[0]             = 8.271; //5.779;
     fSmearFactor[0]           = 0.002; //2.626; //2.08562;
     fSmearFactorPr[0]         = 0.;
-    
     fScaleFactor[1]           = 0.957; //1.0112; 
     fTrigEff_P[1]             = 22.72; //15.8668; //20.5889;
     fTrigEff_K[1]             = 4.506; //4.95885; 
     fSmearFactor[1]           = 0.238; //2.548;
     fSmearFactorPr[1]         =  0.;
+    
+    
+    // Re-optimization on 04/10/2019 after being unable to
+    // replicate previously-generated light plots
+    /*
+    fScaleFactor[0]           = 0.997;
+    fTrigEff_P[0]             = 78.33;
+    fTrigEff_K[0]             = 8.394;
+    fSmearFactor[0]           = ;
+    fSmearFactorPr[0]         = 0.;
+    fScaleFactor[1]           = 0.941;
+    fTrigEff_P[1]             = 22.51; 
+    fTrigEff_K[1]             = 4.410;
+    fSmearFactor[1]           = 0.238;
+    fSmearFactorPr[1]         =  0.;
+*/
+    
+
     
     fAmpCut[0]                = 130.;
     fAmpCut[1]                = 40.;
@@ -1058,12 +1057,8 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
   if( isMC && fMaxMCEvts > 0 && kMax > fMaxMCEvts ) kMax = fMaxMCEvts;
   for(int i=0; i<kMax; i++){
   
-    if( (i % 10000) == 0 ) std::cout<<"...tree entry "<<i<<"\n";
+    if( i > 0 && (i % 100000) == 0 ) std::cout<<"...tree entry "<<i<<"\n";
     
-    //............
-    //if( i != 3800 ) continue;
-    //if( i > 3800 ) break;
-   
     tree->GetEntry(i);
     
     if( !isMC && ((fMaxRun > 0 && fRunNumber > fMaxRun) || (fMinRun > 0 && fRunNumber < fMinRun ))) continue;
@@ -1071,7 +1066,6 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
     if( fChargeSignFilter != 0 && fTrue_ChargeSign != fChargeSignFilter ) continue;
 
     float fWgt = 1.0;
-//    if( isMC ) fWgt *= GetMCSpatialWgt( fTrue_MuTrackEnd_X, fTrue_MuTrackEnd_Y, fTrue_MuTrackEnd_Z );
    
     // convert time into days
     float day = float(fEventTime - fTimeStart)/86400.;
@@ -1462,9 +1456,6 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
     }
 
 
-    // =====================================================
-    // Light and calorimetry plots
-
     // ======================================================
     // Light diagnostic plots
     //  - 2D shower
@@ -1474,7 +1465,7 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
       
       // require the 2D direction of the shower be going backward
       // (away from wireplanes)
-//      if( fElDir2D_X > 0. ) {
+      //if( fElDir2D_X > 0. ) {
 
         if( !fPE_Require3DShower || (fPE_Require3DShower && goodShower3D) ) {
           if( !isMC ) hPE_total_compare->Fill( fPE_total[0], fPE_total[1] );
@@ -1793,20 +1784,21 @@ void ScaleMC(){
 // demonstrate smearing and trigger efficiency.
 void LightPlots(){
   
-  float textSize = 0.035;
+  float textSize = 0.04;
   float mar_l  = 0.15;
-  float mar_r  = 0.05;
-  float mar_t  = 0.05;
+  float mar_r  = 0.03;
+  float mar_t  = 0.03;
   float mar_b  = 0.15;
   float leg_x1 = 0.50;
   float leg_x2 = 1.-mar_r-0.02;
   float leg_y1 = 0.7;
   float leg_y2 = 1.-mar_t-0.02;
-  float text_x1 =  mar_l+0.02;
+  float text_x1 =  mar_l+textSize;
   float text_x2 =  0.4;
   float text_y1 = 0.75;
   float text_y2 = 1.-mar_t-0.03;
   float axisTitleSize = 0.045;
+  float axisLabelSize = 0.040;
 
   /*
   // Setting the Latex Header
@@ -1942,7 +1934,7 @@ void LightPlots(){
   //=======================================================================
   // 3) Official data-MC comparison plots
   //=======================================================================
-  TCanvas* cDataMC[2];
+  TCanvas* cLightPlots;
   TLegend* lDataMC[2][2];
   TPaveText* header[2];
 
@@ -1955,6 +1947,9 @@ void LightPlots(){
   TH1D* hc2PE_total[2][2];
   TH1D* hc2PE_prompt_mcerr[2];
   TH1D* hc2PE_total_mcerr[2];
+
+  cLightPlots = new TCanvas("LightPlots","LightPlots",900,900);
+  cLightPlots ->Divide(2,2,0.005,0.005); 
   
   for(int ch=0; ch<2; ch++){
   
@@ -1965,37 +1960,26 @@ void LightPlots(){
     hc2PE_total[0][ch] = (TH1D*)hPE_total[0][ch]->Clone();
     hc2PE_total[1][ch] = (TH1D*)hPE_total[1][ch]->Clone();
     hc2PE_total_mcerr[ch] = (TH1D*)hPE_total[1][ch]->Clone();
-//    hc2PE_total[0][ch] = (TH1D*)hPE_total_qc[0][ch]->Clone();
-//    hc2PE_total[1][ch] = (TH1D*)hPE_total_qc[1][ch]->Clone();
-//    hc2PE_total_mcerr[ch] = (TH1D*)hPE_total_qc[1][ch]->Clone();
-    /*   
-    hc2PE_prompt[0][ch] = hPE_prompt[0][ch];
-    hc2PE_prompt[1][ch] = hPE_prompt[1][ch];
-    hc2PE_total[0][ch] =  hPE_total_qc[0][ch];
-    hc2PE_total[1][ch] =  hPE_total_qc[1][ch];
-    hc2PE_prompt_mcerr[ch] = hPE_prompt[1][ch];
-    hc2PE_total_mcerr[ch] = hPE_total_qc[1][ch];
-    */
-
-    if( ch==0 ) cDataMC[ch] = new TCanvas("DataMC0","DataMC0",1000,500);
-    if( ch==1 ) cDataMC[ch] = new TCanvas("DataMC1","DataMC1",1000,500);
-    cDataMC[ch] -> Divide(2,1);
+//  hc2PE_total[0][ch] = (TH1D*)hPE_total_qc[0][ch]->Clone();
+//  hc2PE_total[1][ch] = (TH1D*)hPE_total_qc[1][ch]->Clone();
+//  hc2PE_total_mcerr[ch] = (TH1D*)hPE_total_qc[1][ch]->Clone();
     int index=0;
+    int index2=0;
     
     // ---------------------------------------
     // Prompt light
     index=0;
-    cDataMC[ch] -> cd(index+1);
+    if( ch==0 ) index2 = 0;
+    if( ch==1 ) index2 = 2;
+    cLightPlots->cd(index2+1);
     gPad->SetLeftMargin(mar_l);
     gPad->SetRightMargin(mar_r);
     gPad->SetTopMargin(mar_t);
-    hc2PE_prompt[1][ch] ->GetYaxis()->SetTitleOffset(1.3);
+    FormatAxes(hc2PE_prompt[1][ch], axisTitleSize, axisLabelSize, 1.0, 1.4);
     hc2PE_prompt[1][ch] ->SetTitle("");
     hc2PE_prompt[1][ch] ->SetMaximum(hc2PE_prompt[0][ch]->GetMaximum()*1.3);
     hc2PE_prompt[1][ch] ->SetLineColor(kBlack);
-    hc2PE_prompt[1][ch] ->SetFillColor(kYellow-10); //kGray); //(kRed-10); // kGray
-    hc2PE_prompt[1][ch]  ->GetYaxis()->SetTitleSize(0.045);
-    hc2PE_prompt[1][ch]  ->GetXaxis()->SetTitleSize(0.045);
+    hc2PE_prompt[1][ch] ->SetFillColor(kYellow-10); 
     hc2PE_prompt[1][ch] ->DrawCopy("hist");
     
     hc2PE_prompt_mcerr[ch]->SetFillColor(kGray+2);
@@ -2014,20 +1998,10 @@ void LightPlots(){
     lDataMC[ch][index] ->AddEntry(hc2PE_prompt[0][ch], "Data", "LPE");
     lDataMC[ch][index] ->Draw();
    
-    /* 
-    AddTextLine(t, text_x1, leg_y2, 1, "#bf{LArIAT Preliminary}");
-    sprintf(buffer,"%s: %s (%s)",runtag.c_str(),pmttag[ch].c_str(),diamtag[ch].c_str());
-    AddTextLine(t, text_x1, leg_y2, 2, buffer);
-    sprintf(buffer,"%i Events",(int)hc2PE_prompt[0][ch]->GetEntries() );
-    AddTextLine(t, text_x1, leg_y2, 3, buffer);
-    */
     TPaveText* hd1 = MakeTextBox(text_x1, leg_y2, textSize, 3);
     hd1->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
     hd1->AddText("Cosmic Michel e^{+/-}");
     hd1->AddText(Form("%s",pmttag[ch].c_str()));
-//    hd1->AddText(Form("%i Events",(int)hc2PE_prompt[0][ch]->GetEntries() ) );
-//    sprintf(buffer,"%s: %s",runtag.c_str(),pmttag[ch].c_str()); header[ch]->AddText(buffer);
-//    sprintf(buffer,"%i Events",(int)hc2PE_prompt[0][ch]->GetEntries() ); header[ch]->AddText(buffer);
     hd1->Draw();
 
     // Add Chi2 info
@@ -2035,30 +2009,23 @@ void LightPlots(){
     pt1->AddText(Form("Data-MC #chi^{2}_{w} = %5.2f", GetChi2Weighted(hc2PE_prompt[0][ch],hc2PE_prompt[1][ch]) ));
     pt1->AddText("Cuts:");
     pt1->AddText(Form("  #DeltaT > %3.1f #mus",fdTcut/1000.));
-    if( fPE_Require3DShower ){ 
-      pt1->AddText ("  3D shower reco'd");
-    } else {
-      pt1->AddText ("  2D shower reco'd");
-//      pt1->AddText ("  3D #mu endpt reco'd");
-    }
+    if( fPE_Require3DShower ) pt1->AddText ("  3D shower reco'd");
+    else pt1->AddText ("  2D shower reco'd");
     pt1->Draw();
      
     
     // ---------------------------------------
     // Total light
     index=1;
-    cDataMC[ch] -> cd(index+1);
+    cLightPlots->cd(index2+2);
     gPad->SetLeftMargin(mar_l);
     gPad->SetRightMargin(mar_r);
     gPad->SetTopMargin(mar_t);
-    hc2PE_total[1][ch] ->GetYaxis()->SetTitleOffset(1.2);
+    FormatAxes(hc2PE_total[1][ch], axisTitleSize, axisLabelSize, 1.0, 1.4);
     hc2PE_total[1][ch] ->SetTitle("");
     hc2PE_total[1][ch] ->SetMaximum(hc2PE_total[0][ch]->GetMaximum()*1.3);
     hc2PE_total[1][ch] ->SetLineColor(kBlack);
-    //hc2PE_total[1][ch] ->SetFillColor(kGray);  //(kRed-10);
     hc2PE_total[1][ch] ->SetFillColor(kYellow-10); //kGray); //(kRed-10); // kGray
-    hc2PE_total[1][ch]  ->GetYaxis()->SetTitleSize(0.045);
-    hc2PE_total[1][ch]  ->GetXaxis()->SetTitleSize(0.045);
     hc2PE_total[1][ch] ->DrawCopy("hist");
     
     hc2PE_total_mcerr[ch]->SetFillColor(kGray+2);
@@ -2081,8 +2048,6 @@ void LightPlots(){
     hd2->AddText(Form("#bf{LArIAT: %s}",runtag.c_str()));
     hd2->AddText("Cosmic Michel e^{+/-}");
     hd2->AddText(Form("%s",pmttag[ch].c_str()));
-//    sprintf(buffer,"%s: %s",runtag.c_str(),pmttag[ch].c_str()); header[ch]->AddText(buffer);
-//    sprintf(buffer,"%i Events",(int)hc2PE_prompt[0][ch]->GetEntries() ); header[ch]->AddText(buffer);
     hd2->Draw();
     
     // Add Chi2 info
@@ -2090,12 +2055,8 @@ void LightPlots(){
     pt2->AddText(Form("Data-MC #chi^{2}_{w} = %5.2f", GetChi2Weighted(hc2PE_total[0][ch],hc2PE_total[1][ch]) ));
     pt2->AddText("Cuts:");
     pt2->AddText(Form("  #DeltaT > %3.1f #mus",fdTcut/1000.));
-    if( fPE_Require3DShower ){ 
-      pt2->AddText ("  3D shower reco'd");
-    } else {
-      pt2->AddText ("  2D shower reco'd");
-//      pt2->AddText ("  3D #mu endpt reco'd");
-    }
+    if( fPE_Require3DShower ) pt2->AddText ("  3D shower reco'd");
+    else pt2->AddText ("  2D shower reco'd");
     pt2->Draw();
     
   }
@@ -4667,8 +4628,6 @@ void CalibrationPlots(){
 
     if( fRunMode == 1 ) { 
       
-      fChargeRes  = 0.;
-      fPhelRes    = 0.;
        
       auto c1 = new TCanvas("c1","c1",850,650);
       c1->cd();
@@ -5752,12 +5711,15 @@ void OptimizePrompt(int ch, int n = 1){
 }
 void OptimizePromptBothPMTs(int n = 1){
   fOptimizeTarget = "prompt";
+  float def = fMinimizeBothPMTs;
+  fMinimizeBothPMTs=true;
   for(int i=0; i<n; i++) {
+    std::cout<<"\n\nOPTIMIZATION PMT 1 -- TARGET: "<<fOptimizeTarget<<", PASS: "<<i+1<<" / "<<n<<"\n\n";
+    Optimize(1);
     std::cout<<"\n\nOPTIMIZATION PMT 0 -- TARGET: "<<fOptimizeTarget<<", PASS: "<<i+1<<" / "<<n<<"\n\n";
     Optimize(0);
-    std::cout<<"\n\nOPTIMIZATION PMT 0 -- TARGET: "<<fOptimizeTarget<<", PASS: "<<i+1<<" / "<<n<<"\n\n";
-    Optimize(1);
   }
+  fMinimizeBothPMTs=def;
 }
 void OptimizeTotal(int ch, int n = 1){
   fOptimizeTarget = "total";
@@ -5776,12 +5738,19 @@ void OptimizeBoth(int ch, int n = 1){
     Optimize(ch);
   }
 }
-void OptimizeTotalOnly(int ch, int n = 1){
-  fOptimizeTarget = "totalonly";
+
+// This optimizes both prompt and late light simultaneously for both PMTs
+void OptimizePlus(int n = 1) {
+  fOptimizeTarget   = "both";
+  float def = fMinimizeBothPMTs; 
+  fMinimizeBothPMTs = true;
   for(int i=0; i<n; i++) {
-    std::cout<<"\n\nOPTIMIZATION -- TARGET: "<<fOptimizeTarget<<", PASS: "<<i+1<<" / "<<n<<"\n\n";
-    Optimize(ch);
+    std::cout<<"\n\nOPTIMIZATION PMT 1 -- TARGET: "<<fOptimizeTarget<<", PASS: "<<i+1<<" / "<<n<<"\n\n";
+    Optimize(1);
+    std::cout<<"\n\nOPTIMIZATION PMT 0 -- TARGET: "<<fOptimizeTarget<<", PASS: "<<i+1<<" / "<<n<<"\n\n";
+    Optimize(0);
   }
+  fMinimizeBothPMTs=def;
 }
 
 
@@ -5810,18 +5779,14 @@ double trigeff(double p, double k, double sc, double sm, double smtot, double fr
   // (w/ smearing and scaling)
   RepMC();
 
-
-
-
-
   // Define output chi2 metric. 
   double out = 0; 
   int nn = 0;
 
   for(size_t i=0; i<2; i++){
     
-    if( !fMinimizeBothPMTs && i != fCh ) continue;
     if( !fUsePmt[i] ) continue;
+    if( !fMinimizeBothPMTs && i != fCh ) continue;
 
     // Get integrals of PE histograms
     double n_prompt_data  = hPE_prompt[0][i]->Integral();
@@ -5831,7 +5796,7 @@ double trigeff(double p, double k, double sc, double sm, double smtot, double fr
       out += GetChi2Weighted( hPE_prompt[0][i], hPE_prompt[1][i], true ); // useWeight = true 
       nn++;
     }
-    if( n_total_data > 0 && (fOptimizeTarget == "total" || fOptimizeTarget == "both" || fOptimizeTarget == "totalonly") ) {
+    if( n_total_data > 0 && (fOptimizeTarget == "total" || fOptimizeTarget == "both" ) ) {
       //out += GetChi2Weighted( hPE_total_qc[0][fCh], hPE_total_qc[1][fCh], true); // useWeight = true
       out += GetChi2Weighted( hPE_total[0][i], hPE_total[1][i], true); // useWeight = true
       nn++;
@@ -5959,23 +5924,8 @@ void FitToLandau(TH1D* h,float& mpv, float& mpv_err, float& sigma, float& sigma_
   FitToLandau(h, h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(), mpv, mpv_err, sigma, sigma_err);
 }
 void FitToLandau(TH1D* h, float r1, float r2, float& mpv, float& mpv_err, float& sigma, float& sigma_err){
-  std::cout<<"Fitting to Landau, range "<<r1<<"-"<<r2<<"\n";
-  /*
-  TF1 landau("landau","landau",r1,r2);
-  landau.SetParameter(0,h->GetMaximum());
-  landau.SetParameter(1,h->GetMean());
-  landau.SetParameter(2,500);
-  h->Fit("landau","R");
   
-  // refit
-  landau.SetRange(landau.GetParameter(1)-3.*landau.GetParameter(2), landau.GetParameter(1)+3.*landau.GetParameter(2));
-  h->Fit("landau","R");
-
-  sigma     = landau.GetParameter(2);
-  sigma_err = landau.GetParError(2);
-  mpv     = landau.GetParameter(1)- 0.2228*sigma;
-  mpv_err = sqrt( pow(landau.GetParError(1),2) + 0.2228*pow(sigma_err,2) );
-  */
+  std::cout<<"Fitting to Landau, range "<<r1<<"-"<<r2<<"\n";
   
   TF1 landau("LandauGaus",LandauGaus,r1,r2,4);
   landau.SetParameter(0,h->GetRMS()/10.); // width scale of landau

@@ -399,7 +399,7 @@ void OptimizePrompt(int ch, int n=1);
 void OptimizePromptBothPMTs(int n=1);
 void OptimizeTotal(int ch, int n=1);
 void OptimizeBoth(int ch, int n=1);
-void OptimizeTotalOnly(int ch, int n=1);
+void OptimizePlus( int n=1);
 static void   fcn_trigeff(int& nDim, double* gout, double& result, double *par, int flg);
 double        trigeff(double, double,double,double,double, double);
 
@@ -1059,3 +1059,5 @@ TGraphAsymmErrors* GetFracSig(TGraphAsymmErrors* g_sig, TGraphAsymmErrors* g_mea
   return g_out;
 
 }
+
+//void DivideCanvas( TCanvas** canvas, int nx, int ny, float xmargin, float ymargin ) {}
