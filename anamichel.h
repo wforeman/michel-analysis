@@ -356,8 +356,6 @@ void FitToLandau(TH1D* h,float& mpv, float& mpv_err, float& sigma, float& sigma_
 void FitToLandau(TH1D* h, float r1, float r2, float& mpv, float& mpv_err, float& sigma, float& sigma_err);
 void FitToGaus(TH1D* h,float& mpv, float& mpv_err, float& sigma, float& sigma_err);
 void FitToGaus(TH1D* h, float r1, float r2, float& mpv, float& mpv_err, float& sigma, float& sigma_err);
-void FitToLandauGaus(TH1D* h,float& mpv, float& mpv_err, float& sigma, float& sigma_err);
-void FitToLandauGaus(TH1D* h, float r1, float r2, float& mpv, float& mpv_err, float& sigma, float& sigma_err);
 
 void MakeResRangeGraphs(TH2D*, TGraphErrors*);
 void MuRangeCalibration(TFile*, int mc, int ipl);

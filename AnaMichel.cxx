@@ -868,9 +868,9 @@ void Init(std::string filenameData, std::string filenameMC, std::string filename
 
   // Preliminary loop over data and MC trees
   //fMaxMCEvts = -200000; //-1.;
-  std::cout<<"Looping over data tree...\n";
+//  std::cout<<"Looping over data tree...\n";
   Loop(0);
-  std::cout<<"Looping over MC tree...\n";
+//  std::cout<<"Looping over MC tree...\n";
   Loop(1);
   //EnergyPlots();
   
@@ -1055,9 +1055,12 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
   // begin loop
   int kMax = (int)tree->GetEntries();
   if( isMC && fMaxMCEvts > 0 && kMax > fMaxMCEvts ) kMax = fMaxMCEvts;
+  
+  std::cout<<"Beginning loop over tree -- type: "<<type<<", smearing: "<<doSmearing<<"\n";
+
   for(int i=0; i<kMax; i++){
   
-    if( i > 0 && (i % 100000) == 0 ) std::cout<<"...tree entry "<<i<<"\n";
+    if( i > 0 && (i % 100000) == 0 ) std::cout<<"...tree entry "<<i<<"\n";// (out of "<<kMax<<")\n";
     
     tree->GetEntry(i);
     
@@ -1108,7 +1111,7 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
       if( isMC ) {
         
         // Scale PEs
-        float scaleFacPrompt = scaleFac;
+        float scaleFacPrompt = scaleFac * 0.95;
         //if( fFastRatio != fFastRatioNom ) scaleFacPrompt *= fFastRatio / fFastRatioNom;
         fMuPE_prompt[ch] *= scaleFacPrompt;
         fPE_prompt[ch] *= scaleFacPrompt;
@@ -1156,7 +1159,9 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
 
           // Quenching correction
           fPE_total_qc[ch] = fPE_total[ch];
+//          if( fCorrectQuenching && fPE_total[ch] > 0 ) fPE_total_qc[ch]  = CorrectForQuenching( fPE_total[ch], fPE_prompt[ch], (*fMuContamCorr_EffTau)[1] );
           if( fCorrectQuenching && fPE_total[ch] > 0 ) fPE_total_qc[ch]  = CorrectForQuenching( fPE_total[ch], fPE_prompt[ch], (*fMuContamCorr_EffTau)[1] );
+          
     
           // Apply trigger cut
           if( fRand->Rndm() > trigEffCut[ch]->Eval(fPE_prompt[ch]) ) fTriggered = false;
@@ -1460,8 +1465,15 @@ void Loop(TTree* tree, bool isMC, bool doSmearing ) {
     // Light diagnostic plots
     //  - 2D shower
     //  - dT cut
+//    if( fDecayTime >= fdTcut ) {
+//   if(     fDecayTime >= fdTcut
+//        &&  fElClusterSize >= 4 && fMuClusterSize >= 8
+//        &&  fMuAveLinearity > 0.7
+//        &&  fMuClusterHitsEndFit >= 5 
+//        &&  fDecayAngle2D > 20 && fDecayAngle2D < 160
+//        ){
     if( goodShower2D &&  fDecayTime >= fdTcut ) { //&&  fMuEnd3D_X > 0.) {
-    //if( goodShower2D &&  fDecayTime >= fdTcut &&  fMuEnd3D_X > 0.) {
+      //if( goodShower2D &&  fDecayTime >= fdTcut &&  fMuEnd3D_X > 0.) {
       
       // require the 2D direction of the shower be going backward
       // (away from wireplanes)
@@ -1957,9 +1969,9 @@ void LightPlots(){
     hc2PE_prompt[1][ch] = (TH1D*)hPE_prompt[1][ch]->Clone();
     hc2PE_prompt_mcerr[ch] = (TH1D*)hPE_prompt[1][ch]->Clone();
     
-    hc2PE_total[0][ch] = (TH1D*)hPE_total[0][ch]->Clone();
-    hc2PE_total[1][ch] = (TH1D*)hPE_total[1][ch]->Clone();
-    hc2PE_total_mcerr[ch] = (TH1D*)hPE_total[1][ch]->Clone();
+   hc2PE_total[0][ch] = (TH1D*)hPE_total[0][ch]->Clone();
+   hc2PE_total[1][ch] = (TH1D*)hPE_total[1][ch]->Clone();
+   hc2PE_total_mcerr[ch] = (TH1D*)hPE_total[1][ch]->Clone();
 //  hc2PE_total[0][ch] = (TH1D*)hPE_total_qc[0][ch]->Clone();
 //  hc2PE_total[1][ch] = (TH1D*)hPE_total_qc[1][ch]->Clone();
 //  hc2PE_total_mcerr[ch] = (TH1D*)hPE_total_qc[1][ch]->Clone();
@@ -5531,7 +5543,7 @@ float CalcFracChange(int n1, int n2){
 
 //##################################################################################
 void RepMC(){
-  std::cout<<"RepMC()...\n";
+//  std::cout<<"RepMC()...\n";
   Loop(fTreeMC_ns,true,true);
 }
 
@@ -5793,18 +5805,19 @@ double trigeff(double p, double k, double sc, double sm, double smtot, double fr
     double n_total_data   = hPE_total_qc[0][i]->Integral();
     
     if( n_prompt_data > 0 && (fOptimizeTarget == "prompt" || fOptimizeTarget == "both") ) {
-      out += GetChi2Weighted( hPE_prompt[0][i], hPE_prompt[1][i], true ); // useWeight = true 
+      out += pow( GetChi2Weighted( hPE_prompt[0][i], hPE_prompt[1][i], true ), 2); // useWeight = true 
       nn++;
     }
     if( n_total_data > 0 && (fOptimizeTarget == "total" || fOptimizeTarget == "both" ) ) {
       //out += GetChi2Weighted( hPE_total_qc[0][fCh], hPE_total_qc[1][fCh], true); // useWeight = true
-      out += GetChi2Weighted( hPE_total[0][i], hPE_total[1][i], true); // useWeight = true
+      out += pow( GetChi2Weighted( hPE_total[0][i], hPE_total[1][i], true), 2); // useWeight = true
       nn++;
     }
   
   }
   
-  out /= nn;
+//  out /= nn;
+  out = sqrt(out) / nn;
   
   /*
   // Define output chi2 metric. 
@@ -5967,40 +5980,6 @@ void FitToGaus(TH1D* h, float r1, float r2, float& mpv, float& mpv_err, float& s
   mpv_err = gaus.GetParError(1);
 }
 
-//#########################################################################################
-void FitToLandauGaus(TH1D* h,float& mpv, float& mpv_err, float& sigma, float& sigma_err){
-  FitToLandauGaus(h, h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(), mpv, mpv_err, sigma, sigma_err);
-}
-void FitToLandauGaus(TH1D* h, float r1, float r2, float& mpv, float& mpv_err, float& sigma, float& sigma_err){
-  TF1 landau("landau","landau(0)+gaus(3)",r1,r2);
-  landau.SetParameter(0,h->GetMaximum());
-  landau.SetParameter(1,h->GetMean());
-  landau.SetParameter(2,500);
-  landau.SetParameter(3,h->GetMaximum());
-  landau.SetParameter(4,h->GetMean());
-  landau.SetParameter(5,500);
-  h->Fit("landau","R");
-  sigma     = landau.GetParameter(2);
-  sigma_err = landau.GetParError(2);
-  mpv     = landau.GetParameter(1)- 0.2228*sigma;
-  mpv_err = std::sqrt( std::pow(landau.GetParError(1),2) + 0.2228*std::pow(sigma_err,2) );
-  mpv     = landau.GetParameter(4);
-  mpv_err = landau.GetParError(4);
-  /*
-  TF1 landau("LandauGaus",LandauGaus,r1,r2,4);
-  landau.SetParameter(0,h->GetRMS()/10.); // width scale of landau
-  landau.SetParLimits(0,20.,h->GetRMS());
-  landau.SetParameter(1,h->GetMean()*0.90);  // mpv
-  landau.SetParameter(2,h->GetEntries()*100); // total integral
-  landau.SetParameter(3,h->GetRMS()); // convoluted gaussian width
-  landau.SetParLimits(3,20.,h->GetRMS()); // convoluted gaussian width
-  h->Fit("LandauGaus","R");
-  sigma     = landau.GetParameter(0);
-  sigma_err = landau.GetParError(0);
-  mpv     = landau.GetParameter(1);
-  mpv_err = landau.GetParError(1);
-  */
-}
 
 // #########################################################################################
 void SetBoxModelParamNames(bool flag){
@@ -6784,7 +6763,8 @@ void CrsMuTest(){
 //#######################################################################################
 float CorrectForQuenching(float L_tot, float L_prompt, float tau){
   float quenchCorrFactor = 1.0;
-  float estimatedTau    = TauConversion((*fMuContamCorr_EffTau)[1]);
+  float estimatedTau    = TauConversion(tau);
+//  float estimatedTau    = TauConversion((*fMuContamCorr_EffTau)[1]);
   // scale up light to compensate for quenching
   if( estimatedTau < fTauT ) quenchCorrFactor = (fTauT*exp(-100./fTauT)) / (estimatedTau*exp(-100./estimatedTau));
   float lateLight = (L_tot - L_prompt)*quenchCorrFactor;
